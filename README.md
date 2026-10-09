@@ -7,18 +7,23 @@
 - 自動辨識中英文欄位名稱（體溫、心跳、呼吸、收縮壓、SpO2、氧氣、意識…），也可手動調整
 - 資料缺漏的列會標示「資料不完整」並列出缺漏項目，不會誤算成低分
 
-## 使用方式
+## 使用方式（不需任何帳號）
 
-1. 直接用瀏覽器開啟 `index.html`（Chrome / Edge / Firefox 皆可）。
-   也可以開啟 GitHub Pages（Settings → Pages → 從此分支部署）後用網址使用。
-2. 選擇評分系統（NEWS2 或 MEWS）。
-3. 上傳 Excel（或先按「下載範例檔」看格式）。
-4. 確認欄位對應 → 查看結果 → 按「下載結果 Excel」。
+**方法一：網址（GitHub Pages）**
+開啟 https://derueichen.github.io/Early-Warning-System/ 即可使用。
+（首次需由 repo 擁有者到 Settings → Pages → Source 選「Deploy from a branch」，
+分支選 `claude/clinical-ews-calculator-jkcb8b`、資料夾 `/ (root)`，按 Save，約 1 分鐘後生效。）
 
-### 線上分享版
+**方法二：單一離線檔**
+把 [`dist/ews-calculator-offline.html`](dist/ews-calculator-offline.html) 下載後傳給別人（LINE、Email、隨身碟皆可），
+對方雙擊即可用瀏覽器開啟，完全不需網路，適合醫院內網。
 
-`dist/ews-calculator.html` 是打包成單一檔案的版本（Excel 程式庫改由 jsDelivr CDN 載入），
-已發佈為 claude.ai Artifact。修改程式後執行 `node scripts/build-artifact.js` 重新產生。
+**操作步驟**
+1. 選擇評分系統（NEWS2 或 MEWS）。
+2. 上傳 Excel（或先按「下載範例檔」看格式）。網頁一開始會顯示範例資料。
+3. 確認欄位對應 → 查看結果 → 按「下載結果 Excel」。
+
+所有計算都在使用者自己的瀏覽器中進行，病人資料不會上傳到任何伺服器。
 
 ## Excel 輸入格式
 
@@ -62,7 +67,12 @@ ews.js                  NEWS2 / MEWS 計分邏輯（純函式）
 style.css               樣式
 vendor/xlsx.bundle.js   xlsx-js-style 1.2.0（Apache-2.0），讀寫含格式的 Excel
 tests/ews.test.js       計分單元測試
+scripts/build-artifact.js  產生 dist/ 下的單檔版本
+dist/ews-calculator-offline.html  完整離線單一檔（含 Excel 程式庫）
+dist/ews-calculator.html          claude.ai Artifact 版（程式庫由 CDN 載入）
 ```
+
+修改程式後執行 `node scripts/build-artifact.js` 重新產生 `dist/` 檔案。
 
 執行測試：`node --test tests/*.test.js`
 
