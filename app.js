@@ -34,29 +34,34 @@
   // ---------- 檔案讀取 ----------
 
   function loadFile(file) {
+    showMessage('');
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         state.wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
       } catch (err) {
-        alert('無法讀取檔案：' + err.message);
+        showMessage('無法讀取這個檔案，請確認是 .xlsx、.xls 或 .csv 格式。（' + err.message + '）');
         return;
       }
-      state.fileName = file.name.replace(/\.[^.]+$/, '');
-      $('fileName').textContent = '已載入：' + file.name;
-      const sel = $('sheet');
-      sel.innerHTML = state.wb.SheetNames.map((n, i) => `<option value="${i}">${esc(n)}</option>`).join('');
-      sel.disabled = state.wb.SheetNames.length < 2;
-      loadSheet(0);
+      useWorkbook(file.name.replace(/\.[^.]+$/, ''), '已載入：' + file.name);
     };
     reader.readAsArrayBuffer(file);
+  }
+
+  function useWorkbook(name, note) {
+    state.fileName = name;
+    $('fileName').textContent = note;
+    const sel = $('sheet');
+    sel.innerHTML = state.wb.SheetNames.map((n, i) => `<option value="${i}">${esc(n)}</option>`).join('');
+    sel.disabled = state.wb.SheetNames.length < 2;
+    loadSheet(0);
   }
 
   function loadSheet(index) {
     const ws = state.wb.Sheets[state.wb.SheetNames[index]];
     const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true, blankrows: false });
     const headerIdx = aoa.findIndex((r) => r.some((c) => c !== null && String(c).trim() !== ''));
-    if (headerIdx < 0) { alert('工作表沒有資料'); return; }
+    if (headerIdx < 0) { showMessage('這個工作表是空的，請選擇有資料的工作表。'); return; }
     const width = Math.max(...aoa.map((r) => r.length));
     state.headers = Array.from({ length: width }, (_, i) => {
       const h = aoa[headerIdx][i];
@@ -240,7 +245,7 @@
     if (state.idCol !== undefined) XLSX.utils.book_append_sheet(wb, patientSheet(system), '病人統計');
     XLSX.utils.book_append_sheet(wb, criteriaSheet(system), '評分標準');
     const stamp = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `${state.fileName || 'EWS'}_${system}_${stamp}.xlsx`);
+    saveWorkbook(wb, `${state.fileName || 'EWS'}_${system}_${stamp}.xlsx`);
   }
 
   function summarySheet(system) {
@@ -365,7 +370,7 @@
 
   // ---------- 範例檔 ----------
 
-  function sampleFile() {
+  function sampleWorkbook() {
     const aoa = [
       ['病歷號', '姓名', '測量時間', '體溫', '心跳', '呼吸', '收縮壓', '舒張壓', 'SpO2', '氧氣', '意識'],
       ['A001', '王小明', '2026-10-01 08:00', 36.8, 78, 16, 125, 78, 98, '否', 'A'],
@@ -378,7 +383,35 @@
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), '生命徵象');
-    XLSX.writeFile(wb, 'EWS_範例.xlsx');
+    return wb;
+  }
+
+  function loadSample() {
+    state.wb = sampleWorkbook();
+    useWorkbook('EWS_範例', '目前顯示範例資料（7 筆虛構病人）。上傳您的 Excel 即可取代。');
+  }
+
+  // 在 claude.ai Artifact 中瀏覽器下載會被封鎖，改用平台的 downloads 功能；一般瀏覽器則直接下載
+  const downloadsReady = window.claude && window.claude.use ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
+
+  async function saveWorkbook(wb, filename) {
+    showMessage('');
+    const downloads = await downloadsReady;
+    if (!downloads) { XLSX.writeFile(wb, filename); return; }
+    try {
+      const data = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+      await downloads.save({ filename, data });
+    } catch (err) {
+      if (err && err.code === 'declined') return;
+      if (err && err.code === 'rate_limited') showMessage('已有一個下載確認視窗開啟中，請先完成它。');
+      else showMessage('此環境無法下載檔案，請改用電腦瀏覽器開啟。');
+    }
+  }
+
+  function showMessage(text) {
+    const el = $('message');
+    el.textContent = text;
+    el.hidden = !text;
   }
 
   // ---------- 工具 ----------
@@ -405,7 +438,7 @@
   $('globalScale2').addEventListener('change', () => state.wb && compute());
   $('filter').addEventListener('change', () => state.wb && renderResults());
   $('download').addEventListener('click', download);
-  $('sample').addEventListener('click', sampleFile);
+  $('sample').addEventListener('click', () => saveWorkbook(sampleWorkbook(), 'EWS_範例.xlsx'));
   const drop = $('drop');
   drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
   drop.addEventListener('dragleave', () => drop.classList.remove('over'));
@@ -415,4 +448,5 @@
     if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
   });
   renderCriteria();
+  loadSample();
 })();

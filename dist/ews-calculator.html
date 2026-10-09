@@ -1,0 +1,808 @@
+<title>早期預警計算器</title>
+<style>
+:root {
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --text: #1f2933;
+  --muted: #616e7c;
+  --border: #d9e2ec;
+  --accent: #2563eb;
+  --accent-text: #ffffff;
+  --high: #fde2e2;
+  --high-text: #9b1c1c;
+  --medium: #ffedd5;
+  --medium-text: #9a3412;
+  --lowmed: #fef9c3;
+  --lowmed-text: #854d0e;
+  --low: #dcfce7;
+  --low-text: #166534;
+  --na: #e5e7eb;
+  --na-text: #4b5563;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111827; --card: #1f2937; --text: #e5e7eb; --muted: #9ca3af; --border: #374151;
+    --accent: #3b82f6;
+    --high: #5b1a1a; --high-text: #fecaca;
+    --medium: #5a2d0c; --medium-text: #fed7aa;
+    --lowmed: #4a3f0b; --lowmed-text: #fef08a;
+    --low: #123d24; --low-text: #bbf7d0;
+    --na: #374151; --na-text: #d1d5db;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+    --bg: #111827; --card: #1f2937; --text: #e5e7eb; --muted: #9ca3af; --border: #374151;
+    --accent: #3b82f6;
+    --high: #5b1a1a; --high-text: #fecaca;
+    --medium: #5a2d0c; --medium-text: #fed7aa;
+    --lowmed: #4a3f0b; --lowmed-text: #fef08a;
+    --low: #123d24; --low-text: #bbf7d0;
+    --na: #374151; --na-text: #d1d5db;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  line-height: 1.5;
+}
+header, main, footer { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+header { padding-top: 24px; }
+h1 { font-size: 1.6rem; margin: 0 0 4px; }
+h2 { font-size: 1.15rem; margin: 0 0 12px; }
+.sub, .muted { color: var(--muted); }
+footer { padding: 16px; font-size: .9rem; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 16px 0; }
+.row { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; margin-bottom: 12px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: .9rem; }
+label.check { flex-direction: row; align-items: center; gap: 8px; margin-top: 12px; }
+select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text); font-size: .95rem; max-width: 100%; }
+.btn { display: inline-block; padding: 8px 16px; border: 0; border-radius: 6px; background: var(--accent); color: var(--accent-text); cursor: pointer; font-size: .95rem; }
+.btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+.drop { border: 2px dashed var(--border); border-radius: 10px; padding: 24px; text-align: center; }
+.message { color: var(--high-text); background: var(--high); border-radius: 6px; padding: 8px 12px; }
+.drop.over { border-color: var(--accent); }
+.drop .btn { margin: 4px; }
+.mapping { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.mapping .req { color: var(--high-text); }
+.summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat { border-radius: 8px; padding: 12px; background: var(--na); color: var(--na-text); }
+.stat b { display: block; font-size: 1.6rem; }
+.tableWrap { overflow: auto; max-height: 70vh; border: 1px solid var(--border); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; text-align: left; }
+th { position: sticky; top: 0; background: var(--card); z-index: 1; }
+th.score, td.score { text-align: center; }
+td.s3 { font-weight: 700; color: var(--high-text); }
+td.s2 { color: var(--medium-text); }
+.lvl-high { background: var(--high); color: var(--high-text); }
+.lvl-medium { background: var(--medium); color: var(--medium-text); }
+.lvl-low-medium { background: var(--lowmed); color: var(--lowmed-text); }
+.lvl-low, .lvl-none { background: var(--low); color: var(--low-text); }
+.lvl-na { background: var(--na); color: var(--na-text); }
+#criteria table { width: auto; margin: 8px 0 16px; }
+details summary { cursor: pointer; font-weight: 600; }
+</style>
+<header>
+    <h1>臨床早期預警分數（EWS）計算器</h1>
+    <p class="sub">上傳生命徵象 Excel → 自動計算 NEWS2 / MEWS → 下載含分數的統計表。所有資料只在您的瀏覽器中處理，不會上傳到任何伺服器。</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>1. 選擇評分系統與上傳檔案</h2>
+      <div class="row">
+        <label>評分系統
+          <select id="system">
+            <option value="NEWS2">NEWS2（National Early Warning Score 2）</option>
+            <option value="MEWS">MEWS（Modified Early Warning Score）</option>
+          </select>
+        </label>
+        <label>工作表
+          <select id="sheet" disabled></select>
+        </label>
+      </div>
+      <div id="drop" class="drop">
+        <p>將 Excel（.xlsx / .xls / .csv）拖放到這裡，或</p>
+        <label class="btn">選擇檔案<input id="file" type="file" accept=".xlsx,.xls,.csv" hidden></label>
+        <button id="sample" class="btn secondary" type="button">下載範例檔</button>
+        <p id="fileName" class="muted"></p>
+        <p id="message" class="message" role="alert" hidden></p>
+      </div>
+    </section>
+
+    <section id="mapSection" class="card" hidden>
+      <h2>2. 確認欄位對應</h2>
+      <p class="muted">系統已依欄位名稱自動對應，若不正確請手動調整。NEWS2 需要 7 項；MEWS 需要 5 項（不需血氧與氧氣）。</p>
+      <div id="mapping" class="mapping"></div>
+      <label class="check"><input id="globalScale2" type="checkbox"> 所有病人皆使用 SpO₂ Scale 2（高碳酸血症呼吸衰竭，目標 SpO₂ 88–92%）</label>
+    </section>
+
+    <section id="resultSection" class="card" hidden>
+      <h2>3. 結果</h2>
+      <div id="summary" class="summary"></div>
+      <div class="row">
+        <label>篩選
+          <select id="filter">
+            <option value="all">全部</option>
+            <option value="high">高風險</option>
+            <option value="medium">中風險以上</option>
+            <option value="incomplete">資料不完整</option>
+          </select>
+        </label>
+        <button id="download" class="btn" type="button">下載結果 Excel</button>
+      </div>
+      <div class="tableWrap"><table id="table"></table></div>
+    </section>
+
+    <section class="card">
+      <details>
+        <summary>評分標準說明</summary>
+        <div id="criteria"></div>
+      </details>
+    </section>
+  </main>
+
+  <footer class="muted">本工具僅供臨床輔助參考，不能取代專業醫療判斷。</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+  <script>
+/*
+ * 臨床早期預警分數計算核心（NEWS2 / MEWS）
+ * 純函式，不依賴瀏覽器，可在 Node.js 中測試。
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.EWS = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  // ---------- 輸入值解析 ----------
+
+  function toNumber(v) {
+    if (v === null || v === undefined) return null;
+    if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+    const m = String(v).replace(/,/g, '').match(/-?\d+(\.\d+)?/);
+    return m ? parseFloat(m[0]) : null;
+  }
+
+  // 血壓可能寫成 "120/80"，取收縮壓（第一個數字）
+  const parseSBP = toNumber;
+
+  // 意識狀態 → 'A' | 'C' | 'V' | 'P' | 'U' | null
+  function parseConsciousness(v) {
+    if (v === null || v === undefined) return null;
+    const s = String(v).trim().toLowerCase();
+    if (!s) return null;
+    const table = [
+      ['A', ['a', 'alert', '清醒', '清楚', '意識清楚', '意識清醒']],
+      ['C', ['c', 'confusion', 'confused', 'new confusion', '混亂', '意識混亂', '新發混亂', '譫妄']],
+      ['V', ['v', 'voice', 'verbal', '對聲音有反應', '聲音', '對聲音']],
+      ['P', ['p', 'pain', '對疼痛有反應', '疼痛', '對痛', '對痛有反應']],
+      ['U', ['u', 'unresponsive', '無反應', '昏迷', '無意識']],
+    ];
+    for (const [code, words] of table) if (words.includes(s)) return code;
+    // GCS 數值：15 視為清醒
+    const n = toNumber(s);
+    if (n !== null && /^\d+$/.test(s) && n >= 3 && n <= 15) return n === 15 ? 'A' : 'GCS<15';
+    return null;
+  }
+
+  // 是否使用氧氣 → true | false | null
+  function parseOxygen(v) {
+    if (v === null || v === undefined) return null;
+    if (typeof v === 'boolean') return v;
+    const s = String(v).trim().toLowerCase();
+    if (!s) return null;
+    const yes = ['y', 'yes', 'true', 'o2', 'oxygen', '是', '有', '使用', '給氧', '氧氣', 'nc', 'mask', 'nrm', 'hfnc'];
+    const no = ['n', 'no', 'false', 'air', 'ra', 'room air', '否', '無', '沒有', '未使用', '室內空氣', '空氣'];
+    if (yes.includes(s)) return true;
+    if (no.includes(s)) return false;
+    const n = toNumber(s); // 氧氣流量（L/min）或 FiO2
+    if (n !== null) {
+      if (n === 0 || n === 21) return false;
+      return n > 0;
+    }
+    if (/l\/?min|鼻導管|面罩/.test(s)) return true;
+    return null;
+  }
+
+  function parseBool(v) {
+    if (v === null || v === undefined) return false;
+    if (typeof v === 'boolean') return v;
+    const s = String(v).trim().toLowerCase();
+    return ['y', 'yes', 'true', '1', '是', '有', 'scale 2', 'scale2', '2', 'copd'].includes(s);
+  }
+
+  // ---------- NEWS2（英國皇家內科醫學會 2017） ----------
+
+  const news2 = {
+    rr: (x) => (x <= 8 ? 3 : x <= 11 ? 1 : x <= 20 ? 0 : x <= 24 ? 2 : 3),
+    spo2Scale1: (x) => (x <= 91 ? 3 : x <= 93 ? 2 : x <= 95 ? 1 : 0),
+    spo2Scale2: (x, onO2) => {
+      if (x <= 83) return 3;
+      if (x <= 85) return 2;
+      if (x <= 87) return 1;
+      if (x <= 92 || !onO2) return 0;
+      return x <= 94 ? 1 : x <= 96 ? 2 : 3;
+    },
+    oxygen: (onO2) => (onO2 ? 2 : 0),
+    sbp: (x) => (x <= 90 ? 3 : x <= 100 ? 2 : x <= 110 ? 1 : x <= 219 ? 0 : 3),
+    hr: (x) => (x <= 40 ? 3 : x <= 50 ? 1 : x <= 90 ? 0 : x <= 110 ? 1 : x <= 130 ? 2 : 3),
+    consciousness: (c) => (c === 'A' ? 0 : 3),
+    temp: (x) => (x <= 35 ? 3 : x <= 36 ? 1 : x <= 38 ? 0 : x <= 39 ? 1 : 2),
+  };
+
+  function news2Risk(total, anyThree) {
+    if (total >= 7) return { level: 'high', label: '高風險', action: '緊急/急救團隊評估，考慮轉加護病房' };
+    if (total >= 5) return { level: 'medium', label: '中風險', action: '緊急通知醫師評估，至少每小時監測' };
+    if (anyThree) return { level: 'low-medium', label: '低-中風險（單項 3 分）', action: '通知醫師評估，至少每小時監測' };
+    if (total >= 1) return { level: 'low', label: '低風險', action: '護理評估，至少每 4–6 小時監測' };
+    return { level: 'none', label: '低風險（0 分）', action: '常規監測，至少每 12 小時' };
+  }
+
+  // ---------- MEWS（Subbe et al. 2001） ----------
+
+  const mews = {
+    sbp: (x) => (x <= 70 ? 3 : x <= 80 ? 2 : x <= 100 ? 1 : x <= 199 ? 0 : 2),
+    hr: (x) => (x < 40 ? 2 : x <= 50 ? 1 : x <= 100 ? 0 : x <= 110 ? 1 : x <= 129 ? 2 : 3),
+    rr: (x) => (x < 9 ? 2 : x <= 14 ? 0 : x <= 20 ? 1 : x <= 29 ? 2 : 3),
+    temp: (x) => (x < 35 ? 2 : x < 38.5 ? 0 : 2),
+    // MEWS 原版 AVPU：A=0, V=1, P=2, U=3；新發混亂（C）比照 V
+    consciousness: (c) => ({ A: 0, C: 1, V: 1, P: 2, U: 3 }[c] ?? 1),
+  };
+
+  function mewsRisk(total) {
+    if (total >= 5) return { level: 'high', label: '高風險', action: '立即通知醫師/快速反應小組' };
+    if (total >= 3) return { level: 'medium', label: '中風險', action: '通知醫師評估，增加監測頻率' };
+    return { level: 'low', label: '低風險', action: '常規監測' };
+  }
+
+  // ---------- 計算 ----------
+
+  /**
+   * @param {object} v 原始輸入：{ rr, spo2, onO2, sbp, hr, consciousness, temp, scale2 }
+   * @param {'NEWS2'|'MEWS'} system
+   * @returns {{scores: object, total: number|null, partialTotal: number, missing: string[], risk: object|null}}
+   */
+  function calculate(v, system) {
+    const n = {
+      rr: toNumber(v.rr),
+      spo2: toNumber(v.spo2),
+      onO2: parseOxygen(v.onO2),
+      sbp: parseSBP(v.sbp),
+      hr: toNumber(v.hr),
+      consciousness: parseConsciousness(v.consciousness),
+      temp: toNumber(v.temp),
+      scale2: parseBool(v.scale2),
+    };
+
+    const scores = {};
+    const missing = [];
+    const add = (key, value, fn) => {
+      if (value === null) { scores[key] = null; missing.push(key); }
+      else scores[key] = fn(value);
+    };
+
+    if (system === 'MEWS') {
+      add('rr', n.rr, mews.rr);
+      add('sbp', n.sbp, mews.sbp);
+      add('hr', n.hr, mews.hr);
+      add('consciousness', n.consciousness, mews.consciousness);
+      add('temp', n.temp, mews.temp);
+    } else {
+      add('rr', n.rr, news2.rr);
+      if (n.scale2) add('spo2', n.spo2, (x) => news2.spo2Scale2(x, n.onO2 === true));
+      else add('spo2', n.spo2, news2.spo2Scale1);
+      add('onO2', n.onO2, news2.oxygen);
+      add('sbp', n.sbp, news2.sbp);
+      add('hr', n.hr, news2.hr);
+      add('consciousness', n.consciousness, news2.consciousness);
+      add('temp', n.temp, news2.temp);
+    }
+
+    const vals = Object.values(scores).filter((s) => s !== null);
+    const partialTotal = vals.reduce((a, b) => a + b, 0);
+    const complete = missing.length === 0;
+    const total = complete ? partialTotal : null;
+    let risk = null;
+    if (complete) risk = system === 'MEWS' ? mewsRisk(total) : news2Risk(total, vals.includes(3));
+    return { scores, total, partialTotal, missing, risk, parsed: n };
+  }
+
+  // ---------- 欄位自動對應 ----------
+
+  const FIELDS = {
+    rr: { label: '呼吸次數 (RR)', aliases: ['rr', 'resp', 'respiration', 'respiratory rate', 'respiratory', 'breath', '呼吸', '呼吸次數', '呼吸速率', '呼吸頻率', 'r'] },
+    spo2: { label: '血氧 SpO₂ (%)', aliases: ['spo2', 'sp02', 'sao2', 'o2 sat', 'oxygen saturation', 'saturation', 'sat', '血氧', '血氧飽和度', '血氧濃度', '氧飽和度'] },
+    onO2: { label: '是否使用氧氣', aliases: ['o2', 'oxygen', 'on o2', 'supplemental oxygen', 'o2 therapy', 'fio2', 'o2 flow', '氧氣', '給氧', '氧氣治療', '使用氧氣', '是否給氧', '氧氣流量', '供氧'] },
+    sbp: { label: '收縮壓 SBP (mmHg)', aliases: ['sbp', 'systolic', 'systolic bp', 'sys', 'bp', 'blood pressure', '收縮壓', '血壓', '血壓收縮壓'] },
+    hr: { label: '心跳 HR (次/分)', aliases: ['hr', 'pulse', 'heart rate', 'pr', 'p', '心跳', '脈搏', '心率', '心跳次數'] },
+    consciousness: { label: '意識 (AVPU)', aliases: ['avpu', 'acvpu', 'consciousness', 'loc', 'level of consciousness', 'mental status', 'gcs', '意識', '意識狀態', '意識程度', '神智'] },
+    temp: { label: '體溫 (°C)', aliases: ['temp', 'temperature', 'bt', 't', 'body temperature', '體溫', '溫度'] },
+    scale2: { label: 'SpO₂ Scale 2（高碳酸血症）', aliases: ['scale2', 'scale 2', 'spo2 scale 2', 'hypercapnic', 'copd', '高碳酸', '高碳酸血症', '慢性阻塞性肺病'] },
+  };
+
+  function normalizeHeader(h) {
+    return String(h ?? '').toLowerCase().replace(/[（(].*?[)）]/g, '').replace(/[\s_\-:：%°℃]/g, '').trim();
+  }
+
+  function autoMap(headers) {
+    const map = {};
+    const used = new Set();
+    // 先精確比對，再做包含比對
+    for (const pass of ['exact', 'contains']) {
+      for (const [key, def] of Object.entries(FIELDS)) {
+        if (map[key] !== undefined) continue;
+        const aliases = def.aliases.map(normalizeHeader);
+        const idx = headers.findIndex((h, i) => {
+          if (used.has(i)) return false;
+          const nh = normalizeHeader(h);
+          if (!nh) return false;
+          if (pass === 'exact') return aliases.includes(nh);
+          return aliases.some((a) => a.length >= 2 && nh.includes(a));
+        });
+        if (idx >= 0) { map[key] = idx; used.add(idx); }
+      }
+    }
+    return map;
+  }
+
+  return { calculate, autoMap, FIELDS, parseConsciousness, parseOxygen, toNumber, news2, mews };
+});
+</script>
+  <script>
+/* global XLSX, EWS */
+(function () {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+
+  const SCORE_COLUMNS = {
+    NEWS2: [
+      ['rr', '呼吸分數'], ['spo2', '血氧分數'], ['onO2', '氧氣分數'], ['sbp', '收縮壓分數'],
+      ['hr', '心跳分數'], ['consciousness', '意識分數'], ['temp', '體溫分數'],
+    ],
+    MEWS: [
+      ['sbp', '收縮壓分數'], ['hr', '心跳分數'], ['rr', '呼吸分數'], ['temp', '體溫分數'], ['consciousness', '意識分數'],
+    ],
+  };
+  const REQUIRED = {
+    NEWS2: ['rr', 'spo2', 'onO2', 'sbp', 'hr', 'consciousness', 'temp'],
+    MEWS: ['sbp', 'hr', 'rr', 'temp', 'consciousness'],
+  };
+  const LEVELS = {
+    NEWS2: [
+      ['high', '高風險（≥7）'], ['medium', '中風險（5–6）'], ['low-medium', '低-中（單項 3 分）'],
+      ['low', '低風險（1–4）'], ['none', '0 分'], ['na', '資料不完整'],
+    ],
+    MEWS: [['high', '高風險（≥5）'], ['medium', '中風險（3–4）'], ['low', '低風險（0–2）'], ['na', '資料不完整']],
+  };
+  const FILL = {
+    high: 'FDE2E2', medium: 'FFEDD5', 'low-medium': 'FEF9C3', low: 'DCFCE7', none: 'DCFCE7', na: 'E5E7EB',
+  };
+  const ID_ALIASES = ['病歷號', '病歷號碼', '病歷', 'mrn', 'chartno', 'patientid', 'id', '病人編號', '床號', '姓名', 'name'];
+
+  const state = { wb: null, fileName: '', headers: [], rows: [], map: {}, idCol: undefined, results: [] };
+
+  // ---------- 檔案讀取 ----------
+
+  function loadFile(file) {
+    showMessage('');
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        state.wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+      } catch (err) {
+        showMessage('無法讀取這個檔案，請確認是 .xlsx、.xls 或 .csv 格式。（' + err.message + '）');
+        return;
+      }
+      useWorkbook(file.name.replace(/\.[^.]+$/, ''), '已載入：' + file.name);
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function useWorkbook(name, note) {
+    state.fileName = name;
+    $('fileName').textContent = note;
+    const sel = $('sheet');
+    sel.innerHTML = state.wb.SheetNames.map((n, i) => `<option value="${i}">${esc(n)}</option>`).join('');
+    sel.disabled = state.wb.SheetNames.length < 2;
+    loadSheet(0);
+  }
+
+  function loadSheet(index) {
+    const ws = state.wb.Sheets[state.wb.SheetNames[index]];
+    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true, blankrows: false });
+    const headerIdx = aoa.findIndex((r) => r.some((c) => c !== null && String(c).trim() !== ''));
+    if (headerIdx < 0) { showMessage('這個工作表是空的，請選擇有資料的工作表。'); return; }
+    const width = Math.max(...aoa.map((r) => r.length));
+    state.headers = Array.from({ length: width }, (_, i) => {
+      const h = aoa[headerIdx][i];
+      return h === null || h === undefined || String(h).trim() === '' ? `欄位${i + 1}` : String(h).trim();
+    });
+    state.rows = aoa.slice(headerIdx + 1).filter((r) => r.some((c) => c !== null && String(c).trim() !== ''));
+    state.map = EWS.autoMap(state.headers);
+    const used = new Set(Object.values(state.map));
+    const norm = (s) => s.toLowerCase().replace(/[\s_\-]/g, '');
+    let idCol;
+    for (const a of ID_ALIASES) {
+      idCol = state.headers.findIndex((h, i) => !used.has(i) && norm(h).includes(a));
+      if (idCol >= 0) break;
+    }
+    state.idCol = idCol >= 0 ? idCol : undefined;
+    renderMapping();
+    compute();
+  }
+
+  // ---------- 欄位對應 ----------
+
+  function renderMapping() {
+    const system = $('system').value;
+    const opts = (selected) =>
+      '<option value="">（無）</option>' +
+      state.headers.map((h, i) => `<option value="${i}"${selected === i ? ' selected' : ''}>${esc(h)}</option>`).join('');
+    const fields = Object.entries(EWS.FIELDS).filter(([k]) => system === 'NEWS2' || REQUIRED.MEWS.includes(k));
+    let html = `<label><span>病人識別（病歷號／姓名，選填）</span><select data-key="__id">${opts(state.idCol)}</select></label>`;
+    for (const [key, def] of fields) {
+      const req = REQUIRED[system].includes(key) ? ' <span class="req">*</span>' : '（選填）';
+      html += `<label><span>${def.label}${req}</span><select data-key="${key}">${opts(state.map[key])}</select></label>`;
+    }
+    $('mapping').innerHTML = html;
+    $('globalScale2').parentElement.hidden = system !== 'NEWS2';
+    $('mapSection').hidden = false;
+  }
+
+  $('mapping').addEventListener('change', (e) => {
+    const key = e.target.dataset.key;
+    const val = e.target.value === '' ? undefined : Number(e.target.value);
+    if (key === '__id') state.idCol = val;
+    else state.map[key] = val;
+    compute();
+  });
+
+  // ---------- 計算 ----------
+
+  function compute() {
+    const system = $('system').value;
+    const global2 = $('globalScale2').checked;
+    const get = (row, key) => (state.map[key] === undefined ? null : row[state.map[key]]);
+    state.results = state.rows.map((row) => {
+      const input = {};
+      for (const key of Object.keys(EWS.FIELDS)) input[key] = get(row, key);
+      if (global2) input.scale2 = true;
+      return EWS.calculate(input, system);
+    });
+    renderResults();
+  }
+
+  function levelOf(r) { return r.risk ? r.risk.level : 'na'; }
+
+  function stats() {
+    const system = $('system').value;
+    const counts = Object.fromEntries(LEVELS[system].map(([k]) => [k, 0]));
+    const totals = [];
+    for (const r of state.results) {
+      counts[levelOf(r)]++;
+      if (r.total !== null) totals.push(r.total);
+    }
+    const mean = totals.length ? totals.reduce((a, b) => a + b, 0) / totals.length : null;
+    return { counts, n: state.results.length, complete: totals.length, mean, max: totals.length ? Math.max(...totals) : null };
+  }
+
+  const MISSING_LABEL = { rr: '呼吸', spo2: '血氧', onO2: '氧氣', sbp: '收縮壓', hr: '心跳', consciousness: '意識', temp: '體溫' };
+
+  function outputRow(row, r, system) {
+    const scores = SCORE_COLUMNS[system].map(([k]) => r.scores[k]);
+    return [
+      ...state.headers.map((_, i) => (row[i] === undefined ? null : row[i])),
+      ...scores,
+      r.total !== null ? r.total : null,
+      r.risk ? r.risk.label : '資料不完整',
+      r.risk ? r.risk.action : `已知部分總分 ${r.partialTotal}，請補齊資料`,
+      r.missing.map((k) => MISSING_LABEL[k]).join('、'),
+    ];
+  }
+
+  function outputHeaders(system) {
+    return [...state.headers, ...SCORE_COLUMNS[system].map(([, l]) => l), `${system} 總分`, '風險等級', '建議處置', '缺漏項目'];
+  }
+
+  function renderResults() {
+    const system = $('system').value;
+    const s = stats();
+    $('summary').innerHTML =
+      `<div class="stat"><b>${s.n}</b>總筆數</div>` +
+      `<div class="stat"><b>${s.mean === null ? '–' : s.mean.toFixed(2)}</b>平均總分</div>` +
+      LEVELS[system].map(([k, label]) =>
+        `<div class="stat lvl-${k}"><b>${s.counts[k]}</b>${label}${s.n ? `（${((s.counts[k] / s.n) * 100).toFixed(1)}%）` : ''}</div>`
+      ).join('');
+
+    const filter = $('filter').value;
+    const headers = outputHeaders(system);
+    const nOrig = state.headers.length;
+    const nScore = SCORE_COLUMNS[system].length;
+    let html = '<thead><tr>' + headers.map((h, i) => `<th class="${i >= nOrig && i < nOrig + nScore + 1 ? 'score' : ''}">${esc(h)}</th>`).join('') + '</tr></thead><tbody>';
+    let shown = 0;
+    state.rows.forEach((row, idx) => {
+      const r = state.results[idx];
+      const lvl = levelOf(r);
+      if (filter === 'high' && lvl !== 'high') return;
+      if (filter === 'medium' && lvl !== 'high' && lvl !== 'medium') return;
+      if (filter === 'incomplete' && lvl !== 'na') return;
+      if (++shown > 2000) return;
+      const out = outputRow(row, r, system);
+      html += '<tr>' + out.map((v, i) => {
+        if (i < nOrig) return `<td>${esc(fmt(v))}</td>`;
+        if (i < nOrig + nScore) return `<td class="score${v === 3 ? ' s3' : v === 2 ? ' s2' : ''}">${v === null ? '–' : v}</td>`;
+        if (i === nOrig + nScore) return `<td class="score lvl-${lvl}"><b>${v === null ? '–' : v}</b></td>`;
+        if (i === nOrig + nScore + 1) return `<td class="lvl-${lvl}">${esc(v)}</td>`;
+        return `<td>${esc(v)}</td>`;
+      }).join('') + '</tr>';
+    });
+    html += '</tbody>';
+    if (shown > 2000) html += `<caption class="muted">畫面僅顯示前 2000 筆，下載的 Excel 包含全部 ${shown} 筆。</caption>`;
+    $('table').innerHTML = html;
+    $('resultSection').hidden = false;
+  }
+
+  // ---------- 匯出 ----------
+
+  const border = { style: 'thin', color: { rgb: 'D9E2EC' } };
+  const cellBorder = { top: border, bottom: border, left: border, right: border };
+  const headStyle = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '2563EB' } }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: cellBorder };
+
+  function styleSheet(ws, widths) {
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const cell = ws[XLSX.utils.encode_cell({ r: 0, c })];
+      if (cell) cell.s = headStyle;
+    }
+    ws['!cols'] = widths.map((w) => ({ wch: w }));
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+    ws['!views'] = [{ state: 'frozen', ySplit: 1 }];
+  }
+
+  function download() {
+    const system = $('system').value;
+    const headers = outputHeaders(system);
+    const nOrig = state.headers.length;
+    const nScore = SCORE_COLUMNS[system].length;
+    const data = [headers, ...state.rows.map((row, i) => outputRow(row, state.results[i], system))];
+    const ws = XLSX.utils.aoa_to_sheet(data, { cellDates: true });
+
+    state.results.forEach((r, i) => {
+      const lvl = levelOf(r);
+      for (let c = 0; c < headers.length; c++) {
+        const ref = XLSX.utils.encode_cell({ r: i + 1, c });
+        if (!ws[ref]) ws[ref] = { t: 'z' };
+        const cell = ws[ref];
+        if (cell.t === 'd') cell.z = 'yyyy-mm-dd hh:mm';
+        const s = { border: cellBorder };
+        if (c >= nOrig && c < nOrig + nScore) {
+          s.alignment = { horizontal: 'center' };
+          if (cell.v === 3) s.font = { bold: true, color: { rgb: '9B1C1C' } };
+          else if (cell.v === 2) s.font = { color: { rgb: '9A3412' } };
+        } else if (c === nOrig + nScore || c === nOrig + nScore + 1) {
+          s.fill = { fgColor: { rgb: FILL[lvl] } };
+          s.font = { bold: true };
+          if (c === nOrig + nScore) s.alignment = { horizontal: 'center' };
+        }
+        cell.s = s;
+      }
+    });
+    styleSheet(ws, headers.map((h, c) => (c >= nOrig + nScore + 2 ? 30 : c >= nOrig ? 11 : Math.max(10, String(h).length * 2 + 2))));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `${system}結果`);
+    XLSX.utils.book_append_sheet(wb, summarySheet(system), '統計摘要');
+    if (state.idCol !== undefined) XLSX.utils.book_append_sheet(wb, patientSheet(system), '病人統計');
+    XLSX.utils.book_append_sheet(wb, criteriaSheet(system), '評分標準');
+    const stamp = new Date().toISOString().slice(0, 10);
+    saveWorkbook(wb, `${state.fileName || 'EWS'}_${system}_${stamp}.xlsx`);
+  }
+
+  function summarySheet(system) {
+    const s = stats();
+    const aoa = [['項目', '數值', '百分比']];
+    aoa.push(['評分系統', system, null]);
+    aoa.push(['總筆數', s.n, null]);
+    aoa.push(['資料完整筆數', s.complete, s.n ? s.complete / s.n : null]);
+    aoa.push(['平均總分', s.mean === null ? null : Math.round(s.mean * 100) / 100, null]);
+    aoa.push(['最高總分', s.max, null]);
+    aoa.push([null, null, null]);
+    aoa.push(['風險等級', '筆數', '百分比']);
+    const levelRowStart = aoa.length;
+    for (const [k, label] of LEVELS[system]) aoa.push([label, s.counts[k], s.n ? s.counts[k] / s.n : null]);
+    aoa.push([null, null, null]);
+    aoa.push(['總分分布', '筆數', '百分比']);
+    const dist = {};
+    for (const r of state.results) if (r.total !== null) dist[r.total] = (dist[r.total] || 0) + 1;
+    for (const k of Object.keys(dist).map(Number).sort((a, b) => a - b)) aoa.push([`${k} 分`, dist[k], s.n ? dist[k] / s.n : null]);
+    aoa.push([null, null, null]);
+    aoa.push(['各參數得分 ≥ 1 的筆數', '筆數', '百分比']);
+    for (const [k, l] of SCORE_COLUMNS[system]) {
+      const c = state.results.filter((r) => r.scores[k] > 0).length;
+      aoa.push([l.replace('分數', ''), c, s.n ? c / s.n : null]);
+    }
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    styleSheet(ws, [28, 12, 12]);
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let r = 1; r <= range.e.r; r++) {
+      const pct = ws[XLSX.utils.encode_cell({ r, c: 2 })];
+      if (pct && pct.t === 'n') pct.z = '0.0%';
+      const a = ws[XLSX.utils.encode_cell({ r, c: 0 })];
+      if (a && ['風險等級', '總分分布', '各參數得分 ≥ 1 的筆數'].includes(a.v)) {
+        for (let c = 0; c < 3; c++) ws[XLSX.utils.encode_cell({ r, c })].s = headStyle;
+      }
+    }
+    LEVELS[system].forEach(([k], i) => {
+      ws[XLSX.utils.encode_cell({ r: levelRowStart + i, c: 0 })].s = { fill: { fgColor: { rgb: FILL[k] } }, font: { bold: true } };
+    });
+    return ws;
+  }
+
+  function patientSheet(system) {
+    const groups = new Map();
+    state.rows.forEach((row, i) => {
+      const id = fmt(row[state.idCol]) || '（未填）';
+      if (!groups.has(id)) groups.set(id, []);
+      groups.get(id).push(state.results[i]);
+    });
+    const order = LEVELS[system].map(([k]) => k);
+    const aoa = [[state.headers[state.idCol], '紀錄筆數', '最高總分', '平均總分', '最後一筆總分', '最高風險等級', '高風險次數']];
+    for (const [id, rs] of groups) {
+      const totals = rs.map((r) => r.total).filter((t) => t !== null);
+      const worst = rs.reduce((w, r) => (order.indexOf(levelOf(r)) < order.indexOf(levelOf(w)) ? r : w), rs[0]);
+      const last = rs[rs.length - 1];
+      aoa.push([
+        id, rs.length,
+        totals.length ? Math.max(...totals) : null,
+        totals.length ? Math.round((totals.reduce((a, b) => a + b, 0) / totals.length) * 100) / 100 : null,
+        last.total,
+        worst.risk ? worst.risk.label : '資料不完整',
+        rs.filter((r) => levelOf(r) === 'high').length,
+      ]);
+    }
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    styleSheet(ws, [18, 10, 10, 10, 12, 22, 10]);
+    let r = 1;
+    for (const rs of groups.values()) {
+      const worst = rs.reduce((w, x) => (order.indexOf(levelOf(x)) < order.indexOf(levelOf(w)) ? x : w), rs[0]);
+      ws[XLSX.utils.encode_cell({ r, c: 5 })].s = { fill: { fgColor: { rgb: FILL[levelOf(worst)] } }, font: { bold: true } };
+      r++;
+    }
+    return ws;
+  }
+
+  // ---------- 評分標準 ----------
+
+  const CRITERIA = {
+    NEWS2: {
+      head: ['參數', '3', '2', '1', '0', '1', '2', '3'],
+      rows: [
+        ['呼吸 (次/分)', '≤8', '', '9–11', '12–20', '', '21–24', '≥25'],
+        ['SpO₂ Scale 1 (%)', '≤91', '92–93', '94–95', '≥96', '', '', ''],
+        ['SpO₂ Scale 2 (%)', '≤83', '84–85', '86–87', '88–92 或 ≥93（空氣）', '93–94（給氧）', '95–96（給氧）', '≥97（給氧）'],
+        ['空氣或氧氣', '', '氧氣', '', '空氣', '', '', ''],
+        ['收縮壓 (mmHg)', '≤90', '91–100', '101–110', '111–219', '', '', '≥220'],
+        ['心跳 (次/分)', '≤40', '', '41–50', '51–90', '91–110', '111–130', '≥131'],
+        ['意識', '', '', '', 'A（清醒）', '', '', 'C/V/P/U'],
+        ['體溫 (°C)', '≤35.0', '', '35.1–36.0', '36.1–38.0', '38.1–39.0', '≥39.1', ''],
+      ],
+      notes: ['總分 0：低風險；1–4：低風險；任一單項 3 分：低-中風險；5–6：中風險；≥7：高風險', '資料來源：Royal College of Physicians, NEWS2 (2017)'],
+    },
+    MEWS: {
+      head: ['參數', '3', '2', '1', '0', '1', '2', '3'],
+      rows: [
+        ['收縮壓 (mmHg)', '≤70', '71–80', '81–100', '101–199', '', '≥200', ''],
+        ['心跳 (次/分)', '', '<40', '41–50', '51–100', '101–110', '111–129', '≥130'],
+        ['呼吸 (次/分)', '', '<9', '', '9–14', '15–20', '21–29', '≥30'],
+        ['體溫 (°C)', '', '<35', '', '35.0–38.4', '', '≥38.5', ''],
+        ['意識 (AVPU)', '', '', '', 'A（清醒）', 'V（對聲音）／C', 'P（對疼痛）', 'U（無反應）'],
+      ],
+      notes: ['總分 0–2：低風險；3–4：中風險；≥5：高風險（各院閾值可能不同，請依院內規範）', '資料來源：Subbe CP et al. QJM 2001;94:521-6'],
+    },
+  };
+
+  function criteriaSheet(system) {
+    const c = CRITERIA[system];
+    const ws = XLSX.utils.aoa_to_sheet([c.head, ...c.rows, [], ...c.notes.map((n) => [n])]);
+    styleSheet(ws, [20, 10, 10, 12, 22, 16, 16, 14]);
+    return ws;
+  }
+
+  function renderCriteria() {
+    $('criteria').innerHTML = Object.entries(CRITERIA).map(([name, c]) =>
+      `<h3>${name}</h3><div class="tableWrap"><table><thead><tr>${c.head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>` +
+      c.rows.map((r) => '<tr>' + r.map((v) => `<td>${esc(v)}</td>`).join('') + '</tr>').join('') +
+      `</tbody></table></div>${c.notes.map((n) => `<p class="muted">${esc(n)}</p>`).join('')}`
+    ).join('') +
+      '<p class="muted">意識欄可填 A/C/V/P/U、Alert、清醒、混亂、對聲音、對疼痛、無反應，或 GCS 數值（15 視為清醒，&lt;15 視為非清醒）。' +
+      '氧氣欄可填 是/否、Y/N、O2/Air、或氧氣流量（L/min，0 視為未給氧）。血壓欄可填「120/80」，會取收縮壓。</p>';
+  }
+
+  // ---------- 範例檔 ----------
+
+  function sampleWorkbook() {
+    const aoa = [
+      ['病歷號', '姓名', '測量時間', '體溫', '心跳', '呼吸', '收縮壓', '舒張壓', 'SpO2', '氧氣', '意識'],
+      ['A001', '王小明', '2026-10-01 08:00', 36.8, 78, 16, 125, 78, 98, '否', 'A'],
+      ['A001', '王小明', '2026-10-01 14:00', 38.4, 104, 22, 108, 66, 94, '否', 'A'],
+      ['A002', '李美華', '2026-10-01 08:00', 39.3, 128, 26, 88, 52, 90, '是', 'C'],
+      ['A003', '陳大同', '2026-10-01 08:00', 35.8, 48, 10, 142, 88, 95, '否', 'A'],
+      ['A004', '林小芳', '2026-10-01 08:00', 37.2, 92, 18, 132, 80, 97, '2 L/min', 'V'],
+      ['A005', '張志強', '2026-10-01 08:00', 36.5, 70, 14, 118, 72, 99, '否', '清醒'],
+      ['A006', '黃淑芬', '2026-10-01 08:00', 37.0, 85, null, 120, 76, 96, '否', 'A'],
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), '生命徵象');
+    return wb;
+  }
+
+  function loadSample() {
+    state.wb = sampleWorkbook();
+    useWorkbook('EWS_範例', '目前顯示範例資料（7 筆虛構病人）。上傳您的 Excel 即可取代。');
+  }
+
+  // 在 claude.ai Artifact 中瀏覽器下載會被封鎖，改用平台的 downloads 功能；一般瀏覽器則直接下載
+  const downloadsReady = window.claude && window.claude.use ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
+
+  async function saveWorkbook(wb, filename) {
+    showMessage('');
+    const downloads = await downloadsReady;
+    if (!downloads) { XLSX.writeFile(wb, filename); return; }
+    try {
+      const data = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+      await downloads.save({ filename, data });
+    } catch (err) {
+      if (err && err.code === 'declined') return;
+      if (err && err.code === 'rate_limited') showMessage('已有一個下載確認視窗開啟中，請先完成它。');
+      else showMessage('此環境無法下載檔案，請改用電腦瀏覽器開啟。');
+    }
+  }
+
+  function showMessage(text) {
+    const el = $('message');
+    el.textContent = text;
+    el.hidden = !text;
+  }
+
+  // ---------- 工具 ----------
+
+  function fmt(v) {
+    if (v === null || v === undefined) return '';
+    if (v instanceof Date) {
+      const p = (n) => String(n).padStart(2, '0');
+      return `${v.getFullYear()}-${p(v.getMonth() + 1)}-${p(v.getDate())}` +
+        (v.getHours() || v.getMinutes() ? ` ${p(v.getHours())}:${p(v.getMinutes())}` : '');
+    }
+    return String(v);
+  }
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // ---------- 事件 ----------
+
+  $('file').addEventListener('change', (e) => e.target.files[0] && loadFile(e.target.files[0]));
+  $('sheet').addEventListener('change', (e) => loadSheet(Number(e.target.value)));
+  $('system').addEventListener('change', () => { if (state.wb) { renderMapping(); compute(); } });
+  $('globalScale2').addEventListener('change', () => state.wb && compute());
+  $('filter').addEventListener('change', () => state.wb && renderResults());
+  $('download').addEventListener('click', download);
+  $('sample').addEventListener('click', () => saveWorkbook(sampleWorkbook(), 'EWS_範例.xlsx'));
+  const drop = $('drop');
+  drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    drop.classList.remove('over');
+    if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+  });
+  renderCriteria();
+  loadSample();
+})();
+</script>

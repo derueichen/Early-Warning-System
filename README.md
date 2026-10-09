@@ -15,6 +15,11 @@
 3. 上傳 Excel（或先按「下載範例檔」看格式）。
 4. 確認欄位對應 → 查看結果 → 按「下載結果 Excel」。
 
+### 線上分享版
+
+`dist/ews-calculator.html` 是打包成單一檔案的版本（Excel 程式庫改由 jsDelivr CDN 載入），
+已發佈為 claude.ai Artifact。修改程式後執行 `node scripts/build-artifact.js` 重新產生。
+
 ## Excel 輸入格式
 
 第一列為標題，每一列為一次測量。欄位順序不限，例如：

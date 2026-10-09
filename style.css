@@ -26,7 +26,18 @@
     --lowmed: #4a3f0b; --lowmed-text: #fef08a;
     --low: #123d24; --low-text: #bbf7d0;
     --na: #374151; --na-text: #d1d5db;
+    color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+    --bg: #111827; --card: #1f2937; --text: #e5e7eb; --muted: #9ca3af; --border: #374151;
+    --accent: #3b82f6;
+    --high: #5b1a1a; --high-text: #fecaca;
+    --medium: #5a2d0c; --medium-text: #fed7aa;
+    --lowmed: #4a3f0b; --lowmed-text: #fef08a;
+    --low: #123d24; --low-text: #bbf7d0;
+    --na: #374151; --na-text: #d1d5db;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body {
@@ -48,6 +59,7 @@ select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; 
 .btn { display: inline-block; padding: 8px 16px; border: 0; border-radius: 6px; background: var(--accent); color: var(--accent-text); cursor: pointer; font-size: .95rem; }
 .btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
 .drop { border: 2px dashed var(--border); border-radius: 10px; padding: 24px; text-align: center; }
+.message { color: var(--high-text); background: var(--high); border-radius: 6px; padding: 8px 12px; }
 .drop.over { border-color: var(--accent); }
 .drop .btn { margin: 4px; }
 .mapping { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
