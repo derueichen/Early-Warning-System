@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>早期預警計算器</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>臨床早期預警分數（EWS）計算器</h1>
+    <p class="sub">上傳生命徵象 Excel → 自動計算 NEWS2 / MEWS → 下載含分數的統計表。所有資料只在您的瀏覽器中處理，不會上傳到任何伺服器。</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>1. 選擇評分系統與上傳檔案</h2>
+      <div class="row">
+        <label>評分系統
+          <select id="system">
+            <option value="NEWS2">NEWS2（National Early Warning Score 2）</option>
+            <option value="MEWS">MEWS（Modified Early Warning Score）</option>
+          </select>
+        </label>
+        <label>工作表
+          <select id="sheet" disabled></select>
+        </label>
+      </div>
+      <div id="drop" class="drop">
+        <p>將 Excel（.xlsx / .xls / .csv）拖放到這裡，或</p>
+        <label class="btn">選擇檔案<input id="file" type="file" accept=".xlsx,.xls,.csv" hidden></label>
+        <button id="sample" class="btn secondary" type="button">下載範例檔</button>
+        <p id="fileName" class="muted"></p>
+      </div>
+    </section>
+
+    <section id="mapSection" class="card" hidden>
+      <h2>2. 確認欄位對應</h2>
+      <p class="muted">系統已依欄位名稱自動對應，若不正確請手動調整。NEWS2 需要 7 項；MEWS 需要 5 項（不需血氧與氧氣）。</p>
+      <div id="mapping" class="mapping"></div>
+      <label class="check"><input id="globalScale2" type="checkbox"> 所有病人皆使用 SpO₂ Scale 2（高碳酸血症呼吸衰竭，目標 SpO₂ 88–92%）</label>
+    </section>
+
+    <section id="resultSection" class="card" hidden>
+      <h2>3. 結果</h2>
+      <div id="summary" class="summary"></div>
+      <div class="row">
+        <label>篩選
+          <select id="filter">
+            <option value="all">全部</option>
+            <option value="high">高風險</option>
+            <option value="medium">中風險以上</option>
+            <option value="incomplete">資料不完整</option>
+          </select>
+        </label>
+        <button id="download" class="btn" type="button">下載結果 Excel</button>
+      </div>
+      <div class="tableWrap"><table id="table"></table></div>
+    </section>
+
+    <section class="card">
+      <details>
+        <summary>評分標準說明</summary>
+        <div id="criteria"></div>
+      </details>
+    </section>
+  </main>
+
+  <footer class="muted">本工具僅供臨床輔助參考，不能取代專業醫療判斷。</footer>
+
+  <script src="vendor/xlsx.bundle.js"></script>
+  <script src="ews.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
