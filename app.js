@@ -88,10 +88,11 @@
     const opts = (selected) =>
       '<option value="">（無）</option>' +
       state.headers.map((h, i) => `<option value="${i}"${selected === i ? ' selected' : ''}>${esc(h)}</option>`).join('');
-    const fields = Object.entries(EWS.FIELDS).filter(([k]) => system === 'NEWS2' || REQUIRED.MEWS.includes(k));
+    const fields = Object.entries(EWS.FIELDS).filter(([k]) => system === 'NEWS2' || REQUIRED.MEWS.includes(k) || k.startsWith('gcs'));
     let html = `<label><span>病人識別（病歷號／姓名，選填）</span><select data-key="__id">${opts(state.idCol)}</select></label>`;
     for (const [key, def] of fields) {
-      const req = REQUIRED[system].includes(key) ? ' <span class="req">*</span>' : '（選填）';
+      const req = key === 'consciousness' ? ' <span class="req">*</span>（或填 GCS）'
+        : REQUIRED[system].includes(key) ? ' <span class="req">*</span>' : '（選填）';
       html += `<label><span>${def.label}${req}</span><select data-key="${key}">${opts(state.map[key])}</select></label>`;
     }
     $('mapping').innerHTML = html;
@@ -146,12 +147,13 @@
       r.total !== null ? r.total : null,
       r.risk ? r.risk.label : '資料不完整',
       r.risk ? r.risk.action : `已知部分總分 ${r.partialTotal}，請補齊資料`,
-      r.missing.map((k) => MISSING_LABEL[k]).join('、'),
+      r.missing.map((k) => (k === 'consciousness' && r.parsed.consciousness === 'T' ? '意識（插管，需人工判定）' : MISSING_LABEL[k])).join('、'),
+      r.parsed.consciousnessNote || r.parsed.consciousness || '',
     ];
   }
 
   function outputHeaders(system) {
-    return [...state.headers, ...SCORE_COLUMNS[system].map(([, l]) => l), `${system} 總分`, '風險等級', '建議處置', '缺漏項目'];
+    return [...state.headers, ...SCORE_COLUMNS[system].map(([, l]) => l), `${system} 總分`, '風險等級', '建議處置', '缺漏項目', '意識判定'];
   }
 
   function renderResults() {
@@ -333,7 +335,7 @@
         ['空氣或氧氣', '', '氧氣', '', '空氣', '', '', ''],
         ['收縮壓 (mmHg)', '≤90', '91–100', '101–110', '111–219', '', '', '≥220'],
         ['心跳 (次/分)', '≤40', '', '41–50', '51–90', '91–110', '111–130', '≥131'],
-        ['意識', '', '', '', 'A（清醒）', '', '', 'C/V/P/U'],
+        ['意識', '', '', '', 'A（清醒）／GCS 15', '', '', 'C/V/P/U／GCS <15'],
         ['體溫 (°C)', '≤35.0', '', '35.1–36.0', '36.1–38.0', '38.1–39.0', '≥39.1', ''],
       ],
       notes: ['總分 0：低風險；1–4：低風險；任一單項 3 分：低-中風險；5–6：中風險；≥7：高風險', '資料來源：Royal College of Physicians, NEWS2 (2017)'],
@@ -345,7 +347,7 @@
         ['心跳 (次/分)', '', '<40', '41–50', '51–100', '101–110', '111–129', '≥130'],
         ['呼吸 (次/分)', '', '<9', '', '9–14', '15–20', '21–29', '≥30'],
         ['體溫 (°C)', '', '<35', '', '35.0–38.4', '', '≥38.5', ''],
-        ['意識 (AVPU)', '', '', '', 'A（清醒）', 'V（對聲音）／C', 'P（對疼痛）', 'U（無反應）'],
+        ['意識 (AVPU)', '', '', '', 'A／GCS 15', 'V、C／GCS 13–14', 'P／GCS 9–12', 'U／GCS 3–8'],
       ],
       notes: ['總分 0–2：低風險；3–4：中風險；≥5：高風險（各院閾值可能不同，請依院內規範）', '資料來源：Subbe CP et al. QJM 2001;94:521-6'],
     },
@@ -364,7 +366,10 @@
       c.rows.map((r) => '<tr>' + r.map((v) => `<td>${esc(v)}</td>`).join('') + '</tr>').join('') +
       `</tbody></table></div>${c.notes.map((n) => `<p class="muted">${esc(n)}</p>`).join('')}`
     ).join('') +
-      '<p class="muted">意識欄可填 A/C/V/P/U、Alert、清醒、混亂、對聲音、對疼痛、無反應，或 GCS 數值（15 視為清醒，&lt;15 視為非清醒）。' +
+      '<p class="muted">意識欄可填 A/C/V/P/U、Alert、清醒、混亂、對聲音、對疼痛、無反應，或 GCS。</p>' +
+      '<p class="muted">GCS 可放在意識欄、獨立的 GCS 欄，或分成 E/V/M 三欄；格式可為 13、E3V4M6、3/4/6。' +
+      '換算 AVPU：15 = A、13–14 = V、9–12 = P、3–8 = U。NEWS2 中 GCS &lt;15 一律為非清醒（3 分）。' +
+      'V 為 T（插管）或 A（失語）時無法計算總分：NEWS2 以非清醒計 3 分；MEWS 標示為需人工判定。</p><p class="muted">' +
       '氧氣欄可填 是/否、Y/N、O2/Air、或氧氣流量（L/min，0 視為未給氧）。血壓欄可填「120/80」，會取收縮壓。</p>';
   }
 
@@ -372,14 +377,15 @@
 
   function sampleWorkbook() {
     const aoa = [
-      ['病歷號', '姓名', '測量時間', '體溫', '心跳', '呼吸', '收縮壓', '舒張壓', 'SpO2', '氧氣', '意識'],
-      ['A001', '王小明', '2026-10-01 08:00', 36.8, 78, 16, 125, 78, 98, '否', 'A'],
-      ['A001', '王小明', '2026-10-01 14:00', 38.4, 104, 22, 108, 66, 94, '否', 'A'],
-      ['A002', '李美華', '2026-10-01 08:00', 39.3, 128, 26, 88, 52, 90, '是', 'C'],
-      ['A003', '陳大同', '2026-10-01 08:00', 35.8, 48, 10, 142, 88, 95, '否', 'A'],
-      ['A004', '林小芳', '2026-10-01 08:00', 37.2, 92, 18, 132, 80, 97, '2 L/min', 'V'],
-      ['A005', '張志強', '2026-10-01 08:00', 36.5, 70, 14, 118, 72, 99, '否', '清醒'],
-      ['A006', '黃淑芬', '2026-10-01 08:00', 37.0, 85, null, 120, 76, 96, '否', 'A'],
+      ['病歷號', '姓名', '測量時間', '體溫', '心跳', '呼吸', '收縮壓', '舒張壓', 'SpO2', '氧氣', '意識', 'GCS'],
+      ['A001', '王小明', '2026-10-01 08:00', 36.8, 78, 16, 125, 78, 98, '否', 'A', 15],
+      ['A001', '王小明', '2026-10-01 14:00', 38.4, 104, 22, 108, 66, 94, '否', 'A', 15],
+      ['A002', '李美華', '2026-10-01 08:00', 39.3, 128, 26, 88, 52, 90, '是', 'C', 14],
+      ['A003', '陳大同', '2026-10-01 08:00', 35.8, 48, 10, 142, 88, 95, '否', null, 15],
+      ['A004', '林小芳', '2026-10-01 08:00', 37.2, 92, 18, 132, 80, 97, '2 L/min', null, 'E3V4M6'],
+      ['A005', '張志強', '2026-10-01 08:00', 36.5, 70, 14, 118, 72, 99, '否', '清醒', 15],
+      ['A006', '黃淑芬', '2026-10-01 08:00', 37.0, 85, null, 120, 76, 96, '否', 'A', 15],
+      ['A007', '吳建國', '2026-10-01 08:00', 37.6, 96, 18, 128, 74, 98, '是', null, 'E2VTM5'],
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), '生命徵象');
@@ -388,7 +394,7 @@
 
   function loadSample() {
     state.wb = sampleWorkbook();
-    useWorkbook('EWS_範例', '目前顯示範例資料（7 筆虛構病人）。上傳您的 Excel 即可取代。');
+    useWorkbook('EWS_範例', '目前顯示範例資料（8 筆虛構紀錄）。上傳您的 Excel 即可取代。');
   }
 
   // 在 claude.ai Artifact 中瀏覽器下載會被封鎖，改用平台的 downloads 功能；一般瀏覽器則直接下載

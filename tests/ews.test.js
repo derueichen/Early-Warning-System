@@ -57,13 +57,43 @@ test('輸入值解析', () => {
   assert.strictEqual(EWS.parseOxygen('Room air'), false);
   assert.strictEqual(EWS.parseConsciousness('清醒'), 'A');
   assert.strictEqual(EWS.parseConsciousness('Voice'), 'V');
-  assert.strictEqual(EWS.parseConsciousness(15), 'A');
-  assert.notStrictEqual(EWS.parseConsciousness(12), 'A');
+});
+
+test('GCS 解析與換算', () => {
+  assert.deepStrictEqual(EWS.parseGCS(13), { total: 13, intubated: false });
+  assert.deepStrictEqual(EWS.parseGCS('E3V4M6'), { total: 13, intubated: false });
+  assert.deepStrictEqual(EWS.parseGCS('e4 v5 m6 = 15'), { total: 15, intubated: false });
+  assert.deepStrictEqual(EWS.parseGCS('3/4/6'), { total: 13, intubated: false });
+  assert.deepStrictEqual(EWS.parseGCS('GCS 8'), { total: 8, intubated: false });
+  assert.deepStrictEqual(EWS.parseGCS('E2VTM5'), { total: null, intubated: true });
+  assert.strictEqual(EWS.parseGCS(16), null);
+  assert.strictEqual(EWS.parseGCS('清醒'), null);
+  assert.deepStrictEqual([15, 14, 13, 12, 9, 8, 3].map(EWS.gcsToAVPU), ['A', 'V', 'V', 'P', 'P', 'U', 'U']);
+});
+
+test('以 GCS 計算意識分數', () => {
+  const base = { ...normal, consciousness: null };
+  assert.strictEqual(EWS.calculate({ ...base, gcs: 15 }, 'NEWS2').scores.consciousness, 0);
+  assert.strictEqual(EWS.calculate({ ...base, gcs: 14 }, 'NEWS2').scores.consciousness, 3);
+  assert.strictEqual(EWS.calculate({ ...base, consciousness: 'E3V4M6' }, 'NEWS2').scores.consciousness, 3);
+  assert.strictEqual(EWS.calculate({ ...base, gcsE: 4, gcsV: 5, gcsM: 6 }, 'NEWS2').scores.consciousness, 0);
+  assert.deepStrictEqual([15, 13, 10, 6].map((g) => EWS.calculate({ ...base, gcs: g }, 'MEWS').scores.consciousness), [0, 1, 2, 3]);
+  // AVPU 欄有值時優先於 GCS
+  assert.strictEqual(EWS.calculate({ ...normal, gcs: 8 }, 'MEWS').scores.consciousness, 0);
+  // 插管：NEWS2 計 3 分；MEWS 需人工判定
+  assert.strictEqual(EWS.calculate({ ...base, gcs: 'E2VTM5' }, 'NEWS2').scores.consciousness, 3);
+  const m = EWS.calculate({ ...base, gcs: 'E2VTM5' }, 'MEWS');
+  assert.strictEqual(m.total, null);
+  assert.deepStrictEqual(m.missing, ['consciousness']);
 });
 
 test('欄位自動對應', () => {
   const h = ['病歷號', '姓名', '測量時間', '體溫', '心跳', '呼吸', '收縮壓', '舒張壓', 'SpO2', '氧氣', '意識'];
   assert.deepStrictEqual(EWS.autoMap(h), { temp: 3, hr: 4, rr: 5, sbp: 6, spo2: 8, onO2: 9, consciousness: 10 });
+  const g = ['病歷號', '體溫', '心跳', '呼吸', '收縮壓', 'SpO2', '氧氣', '意識', 'GCS'];
+  assert.deepStrictEqual(EWS.autoMap(g), { temp: 1, hr: 2, rr: 3, sbp: 4, spo2: 5, onO2: 6, consciousness: 7, gcs: 8 });
+  const p = ['體溫', 'GCS-E', 'GCS-V', 'GCS-M', '昏迷指數'];
+  assert.deepStrictEqual(EWS.autoMap(p), { temp: 0, gcsE: 1, gcsV: 2, gcsM: 3, gcs: 4 });
   const e = ['Patient ID', 'Temp (°C)', 'HR', 'RR', 'SBP', 'DBP', 'SpO2 (%)', 'O2 therapy', 'AVPU'];
   assert.deepStrictEqual(EWS.autoMap(e), { temp: 1, hr: 2, rr: 3, sbp: 4, spo2: 6, onO2: 7, consciousness: 8 });
 });

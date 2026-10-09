@@ -33,10 +33,49 @@
       ['U', ['u', 'unresponsive', '無反應', '昏迷', '無意識']],
     ];
     for (const [code, words] of table) if (words.includes(s)) return code;
-    // GCS 數值：15 視為清醒
-    const n = toNumber(s);
-    if (n !== null && /^\d+$/.test(s) && n >= 3 && n <= 15) return n === 15 ? 'A' : 'GCS<15';
     return null;
+  }
+
+  // GCS → { total, intubated } | null
+  // 接受：13、"GCS 13"、"E3V4M6"、"E3V4M6=13"、"3/4/6"；V 為 T（插管）/A（失語）/E 時 intubated=true
+  function parseGCS(v) {
+    if (v === null || v === undefined || v === '') return null;
+    if (typeof v === 'number') return Number.isInteger(v) && v >= 3 && v <= 15 ? { total: v, intubated: false } : null;
+    const s = String(v).trim().toUpperCase();
+    let m = s.match(/E\s*([1-4])\s*V\s*([1-5]|T|A|E|D)\s*M\s*([1-6])/);
+    if (!m) m = s.match(/^([1-4])\s*[/,\-]\s*([1-5])\s*[/,\-]\s*([1-6])$/);
+    if (m) {
+      if (!/\d/.test(m[2])) return { total: null, intubated: true };
+      return { total: +m[1] + +m[2] + +m[3], intubated: false };
+    }
+    m = s.match(/^(?:GCS\s*[:：]?\s*)?(\d{1,2})(?:\s*分)?$/);
+    if (m && +m[1] >= 3 && +m[1] <= 15) return { total: +m[1], intubated: false };
+    return null;
+  }
+
+  // 分開記錄的 E、V、M 三欄
+  function parseGCSParts(e, v, m) {
+    if ([e, v, m].every((x) => x === null || x === undefined || x === '')) return null;
+    return parseGCS(`E${String(e ?? '').trim()}V${String(v ?? '').trim()}M${String(m ?? '').trim()}`);
+  }
+
+  // GCS 換算 AVPU（Kelly 2004、McNarry & Goldhill 2004 的對應範圍）
+  const GCS_AVPU = [[15, 'A'], [13, 'V'], [9, 'P'], [3, 'U']];
+  function gcsToAVPU(total) {
+    for (const [min, code] of GCS_AVPU) if (total >= min) return code;
+    return null;
+  }
+
+  // 意識狀態：先看 AVPU 欄，無法判讀時改用 GCS（總分欄或 E/V/M 分欄）
+  // 回傳 { code, note }；code 為 'A'|'C'|'V'|'P'|'U'|'T'（插管，無法換算 AVPU）|null
+  function resolveConsciousness(v) {
+    const avpu = parseConsciousness(v.consciousness);
+    if (avpu) return { code: avpu, note: '' };
+    const g = parseGCS(v.consciousness) || parseGCS(v.gcs) || parseGCSParts(v.gcsE, v.gcsV, v.gcsM);
+    if (!g) return { code: null, note: '' };
+    if (g.intubated) return { code: 'T', note: 'GCS 含 T/A（插管或失語），非清醒' };
+    const code = gcsToAVPU(g.total);
+    return { code, note: `GCS ${g.total} → ${code}` };
   }
 
   // 是否使用氧氣 → true | false | null
@@ -99,8 +138,8 @@
     hr: (x) => (x < 40 ? 2 : x <= 50 ? 1 : x <= 100 ? 0 : x <= 110 ? 1 : x <= 129 ? 2 : 3),
     rr: (x) => (x < 9 ? 2 : x <= 14 ? 0 : x <= 20 ? 1 : x <= 29 ? 2 : 3),
     temp: (x) => (x < 35 ? 2 : x < 38.5 ? 0 : 2),
-    // MEWS 原版 AVPU：A=0, V=1, P=2, U=3；新發混亂（C）比照 V
-    consciousness: (c) => ({ A: 0, C: 1, V: 1, P: 2, U: 3 }[c] ?? 1),
+    // MEWS 原版 AVPU：A=0, V=1, P=2, U=3；新發混亂（C）比照 V；插管（T）無法換算，需人工判定
+    consciousness: (c) => ({ A: 0, C: 1, V: 1, P: 2, U: 3 }[c] ?? null),
   };
 
   function mewsRisk(total) {
@@ -112,18 +151,20 @@
   // ---------- 計算 ----------
 
   /**
-   * @param {object} v 原始輸入：{ rr, spo2, onO2, sbp, hr, consciousness, temp, scale2 }
+   * @param {object} v 原始輸入：{ rr, spo2, onO2, sbp, hr, consciousness, gcs, gcsE, gcsV, gcsM, temp, scale2 }
    * @param {'NEWS2'|'MEWS'} system
    * @returns {{scores: object, total: number|null, partialTotal: number, missing: string[], risk: object|null}}
    */
   function calculate(v, system) {
+    const loc = resolveConsciousness(v);
     const n = {
       rr: toNumber(v.rr),
       spo2: toNumber(v.spo2),
       onO2: parseOxygen(v.onO2),
       sbp: parseSBP(v.sbp),
       hr: toNumber(v.hr),
-      consciousness: parseConsciousness(v.consciousness),
+      consciousness: loc.code,
+      consciousnessNote: loc.note,
       temp: toNumber(v.temp),
       scale2: parseBool(v.scale2),
     };
@@ -131,8 +172,9 @@
     const scores = {};
     const missing = [];
     const add = (key, value, fn) => {
-      if (value === null) { scores[key] = null; missing.push(key); }
-      else scores[key] = fn(value);
+      const score = value === null ? null : fn(value);
+      scores[key] = score;
+      if (score === null) missing.push(key);
     };
 
     if (system === 'MEWS') {
@@ -169,7 +211,11 @@
     onO2: { label: '是否使用氧氣', aliases: ['o2', 'oxygen', 'on o2', 'supplemental oxygen', 'o2 therapy', 'fio2', 'o2 flow', '氧氣', '給氧', '氧氣治療', '使用氧氣', '是否給氧', '氧氣流量', '供氧'] },
     sbp: { label: '收縮壓 SBP (mmHg)', aliases: ['sbp', 'systolic', 'systolic bp', 'sys', 'bp', 'blood pressure', '收縮壓', '血壓', '血壓收縮壓'] },
     hr: { label: '心跳 HR (次/分)', aliases: ['hr', 'pulse', 'heart rate', 'pr', 'p', '心跳', '脈搏', '心率', '心跳次數'] },
-    consciousness: { label: '意識 (AVPU)', aliases: ['avpu', 'acvpu', 'consciousness', 'loc', 'level of consciousness', 'mental status', 'gcs', '意識', '意識狀態', '意識程度', '神智'] },
+    consciousness: { label: '意識 (AVPU)', aliases: ['avpu', 'acvpu', 'consciousness', 'loc', 'level of consciousness', 'mental status', '意識', '意識狀態', '意識程度', '神智'] },
+    gcsE: { label: 'GCS 睜眼 E', aliases: ['gcse', 'eye', 'eyeopening', 'e', '睜眼', '睜眼反應', 'gcs睜眼'] },
+    gcsV: { label: 'GCS 語言 V', aliases: ['gcsv', 'verbal', 'verbalresponse', 'v', '語言', '語言反應', '言語反應', 'gcs語言'] },
+    gcsM: { label: 'GCS 運動 M', aliases: ['gcsm', 'motor', 'motorresponse', 'm', '運動', '運動反應', 'gcs運動'] },
+    gcs: { label: 'GCS 總分', aliases: ['gcs', 'gcs總分', 'glasgowcomascale', 'glasgow', 'comascale', '昏迷指數', '昏迷量表', '格拉斯哥昏迷指數', 'gcsscore'] },
     temp: { label: '體溫 (°C)', aliases: ['temp', 'temperature', 'bt', 't', 'body temperature', '體溫', '溫度'] },
     scale2: { label: 'SpO₂ Scale 2（高碳酸血症）', aliases: ['scale2', 'scale 2', 'spo2 scale 2', 'hypercapnic', 'copd', '高碳酸', '高碳酸血症', '慢性阻塞性肺病'] },
   };
@@ -199,5 +245,5 @@
     return map;
   }
 
-  return { calculate, autoMap, FIELDS, parseConsciousness, parseOxygen, toNumber, news2, mews };
+  return { calculate, autoMap, FIELDS, parseConsciousness, parseGCS, gcsToAVPU, parseOxygen, toNumber, news2, mews };
 });
