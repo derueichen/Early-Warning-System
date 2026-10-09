@@ -1,4 +1,4 @@
-/* global XLSX, EWS */
+/* global XLSX, EWS, Clean */
 (function () {
   'use strict';
 
@@ -29,7 +29,7 @@
   };
   const ID_ALIASES = ['病歷號', '病歷號碼', '病歷', 'mrn', 'chartno', 'patientid', 'id', '病人編號', '床號', '姓名', 'name'];
 
-  const state = { wb: null, fileName: '', headers: [], rows: [], map: {}, idCol: undefined, results: [] };
+  const state = { raw: [], cleaned: null, wb: null, fileName: '', headers: [], rows: [], map: {}, idCol: undefined, results: [] };
 
   // ---------- 檔案讀取 ----------
 
@@ -59,15 +59,46 @@
 
   function loadSheet(index) {
     const ws = state.wb.Sheets[state.wb.SheetNames[index]];
-    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true, blankrows: false });
-    const headerIdx = aoa.findIndex((r) => r.some((c) => c !== null && String(c).trim() !== ''));
-    if (headerIdx < 0) { showMessage('這個工作表是空的，請選擇有資料的工作表。'); return; }
-    const width = Math.max(...aoa.map((r) => r.length));
-    state.headers = Array.from({ length: width }, (_, i) => {
-      const h = aoa[headerIdx][i];
-      return h === null || h === undefined || String(h).trim() === '' ? `欄位${i + 1}` : String(h).trim();
-    });
-    state.rows = aoa.slice(headerIdx + 1).filter((r) => r.some((c) => c !== null && String(c).trim() !== ''));
+    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true, blankrows: true });
+    if (!aoa.some((r) => r.some((c) => c !== null && String(c).trim() !== ''))) {
+      showMessage('這個工作表是空的，請選擇有資料的工作表。');
+      return;
+    }
+    // 合併儲存格：把左上角的值填入整個範圍（標題常見），讓兩列標題能正確組合
+    const start = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']).s : { r: 0, c: 0 };
+    for (const m of ws['!merges'] || []) {
+      if (m.s.r - start.r > 20) continue;
+      const v = (aoa[m.s.r - start.r] || [])[m.s.c - start.c];
+      for (let r = m.s.r; r <= m.e.r; r++) {
+        for (let c = m.s.c; c <= m.e.c; c++) {
+          const row = aoa[r - start.r];
+          if (row && (row[c - start.c] === null || row[c - start.c] === undefined)) row[c - start.c] = v;
+        }
+      }
+    }
+    state.raw = aoa;
+    state.cleaned = Clean.cleanTable(aoa);
+    for (const l of state.cleaned.log) l.row += start.r;
+    state.cleaned.info.headerRow += start.r;
+    applyTable();
+  }
+
+  // 依「自動整理」勾選與否，決定分析用的表格
+  function applyTable() {
+    if ($('useClean').checked) {
+      state.headers = state.cleaned.headers;
+      state.rows = state.cleaned.rows;
+    } else {
+      // 不整理數值，但仍自動找標題列
+      const aoa = state.raw;
+      const h = Clean.findHeader(aoa);
+      const width = Math.max(...aoa.map((r) => r.length));
+      state.headers = Array.from({ length: width }, (_, i) => {
+        const v = h.headers[i];
+        return v === null || v === undefined || String(v).trim() === '' ? `欄位${i + 1}` : String(v).trim();
+      });
+      state.rows = aoa.slice(h.idx + h.rowsUsed).filter((r) => r.some((c) => c !== null && String(c).trim() !== ''));
+    }
     state.map = EWS.autoMap(state.headers);
     const used = new Set(Object.values(state.map));
     const norm = (s) => s.toLowerCase().replace(/[\s_\-]/g, '');
@@ -77,8 +108,67 @@
       if (idCol >= 0) break;
     }
     state.idCol = idCol >= 0 ? idCol : undefined;
+    renderCleaning();
     renderMapping();
     compute();
+  }
+
+  // ---------- 資料整理 ----------
+
+  function renderCleaning() {
+    const { info, log } = state.cleaned;
+    const on = $('useClean').checked;
+    const dropped = info.dropped.empty + info.dropped.header + info.dropped.duplicate;
+    const items = [
+      `標題列：第 ${info.headerRow}${info.headerRows === 2 ? `–${info.headerRow + 1}` : ''} 列${info.headerRows === 2 ? '（兩列合併）' : ''}`,
+      `資料：${info.rowsOut} 筆（原始 ${info.rowsIn} 列，刪除 ${dropped} 列：空白 ${info.dropped.empty}、重複標題 ${info.dropped.header}、完全重複 ${info.dropped.duplicate}）`,
+      `已修正 ${info.fixes} 個儲存格（拆血壓、去單位、統一格式等）`,
+      `需注意 ${info.warnings} 個儲存格（不合理或無法判讀，已視為缺漏）`,
+    ];
+    if (info.combinedColumn) items.splice(1, 0, `合併欄位「${info.combinedColumn}」已拆成各項生命徵象`);
+    $('cleanSummary').innerHTML = items.map((t) => `<li>${esc(t)}</li>`).join('');
+    const shown = log.filter((l) => $('cleanFilter').value === 'all' || l.type !== 'fix').slice(0, 500);
+    $('cleanLog').innerHTML = shown.length
+      ? '<thead><tr><th>Excel 列</th><th>欄位</th><th>原始值</th><th>整理後</th><th>說明</th></tr></thead><tbody>' +
+        shown.map((l) => `<tr class="log-${l.type}"><td>${l.row}</td><td>${esc(l.column)}</td><td>${esc(fmt(l.original))}</td><td>${esc(l.value === null ? '（缺漏）' : fmt(l.value))}</td><td>${esc(l.note)}</td></tr>`).join('') +
+        '</tbody>' + (log.length > 500 ? `<caption class="muted">只顯示前 500 筆，下載檔案內含全部 ${log.length} 筆紀錄。</caption>` : '')
+      : '<tbody><tr><td class="muted">沒有需要列出的變更。</td></tr></tbody>';
+    $('cleanBody').hidden = !on;
+    $('cleanSection').hidden = false;
+  }
+
+  function logSheet() {
+    const aoa = [['Excel 列', '欄位', '原始值', '整理後', '說明', '類型']];
+    const typeLabel = { fix: '已修正', warn: '需注意', drop: '已刪除' };
+    for (const l of state.cleaned.log) aoa.push([l.row, l.column, fmt(l.original), l.value === null ? '（缺漏）' : fmt(l.value), l.note, typeLabel[l.type]]);
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    styleSheet(ws, [9, 14, 30, 14, 40, 9]);
+    state.cleaned.log.forEach((l, i) => {
+      if (l.type === 'fix') return;
+      const fill = { fgColor: { rgb: l.type === 'warn' ? 'FEF9C3' : 'E5E7EB' } };
+      for (let c = 0; c < 6; c++) {
+        const ref = XLSX.utils.encode_cell({ r: i + 1, c });
+        if (ws[ref]) ws[ref].s = { fill };
+      }
+    });
+    return ws;
+  }
+
+  function downloadCleaned() {
+    const { headers, rows } = state.cleaned;
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows], { cellDates: true });
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let r = 1; r <= range.e.r; r++) {
+      for (let c = 0; c <= range.e.c; c++) {
+        const cell = ws[XLSX.utils.encode_cell({ r, c })];
+        if (cell && cell.t === 'd') cell.z = 'yyyy-mm-dd hh:mm';
+      }
+    }
+    styleSheet(ws, headers.map((h) => Math.max(10, String(h).length * 2 + 2)));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '整理後資料');
+    XLSX.utils.book_append_sheet(wb, logSheet(), '整理紀錄');
+    saveWorkbook(wb, `${state.fileName || 'EWS'}_整理後.xlsx`);
   }
 
   // ---------- 欄位對應 ----------
@@ -245,6 +335,7 @@
     XLSX.utils.book_append_sheet(wb, ws, `${system}結果`);
     XLSX.utils.book_append_sheet(wb, summarySheet(system), '統計摘要');
     if (state.idCol !== undefined) XLSX.utils.book_append_sheet(wb, patientSheet(system), '病人統計');
+    if ($('useClean').checked) XLSX.utils.book_append_sheet(wb, logSheet(), '整理紀錄');
     XLSX.utils.book_append_sheet(wb, criteriaSheet(system), '評分標準');
     const stamp = new Date().toISOString().slice(0, 10);
     saveWorkbook(wb, `${state.fileName || 'EWS'}_${system}_${stamp}.xlsx`);
@@ -377,15 +468,19 @@
 
   function sampleWorkbook() {
     const aoa = [
-      ['病歷號', '姓名', '測量時間', '體溫', '心跳', '呼吸', '收縮壓', '舒張壓', 'SpO2', '氧氣', '意識', 'GCS'],
-      ['A001', '王小明', '2026-10-01 08:00', 36.8, 78, 16, 125, 78, 98, '否', 'A', 15],
-      ['A001', '王小明', '2026-10-01 14:00', 38.4, 104, 22, 108, 66, 94, '否', 'A', 15],
-      ['A002', '李美華', '2026-10-01 08:00', 39.3, 128, 26, 88, 52, 90, '是', 'C', 14],
-      ['A003', '陳大同', '2026-10-01 08:00', 35.8, 48, 10, 142, 88, 95, '否', null, 15],
-      ['A004', '林小芳', '2026-10-01 08:00', 37.2, 92, 18, 132, 80, 97, '2 L/min', null, 'E3V4M6'],
-      ['A005', '張志強', '2026-10-01 08:00', 36.5, 70, 14, 118, 72, 99, '否', '清醒', 15],
-      ['A006', '黃淑芬', '2026-10-01 08:00', 37.0, 85, null, 120, 76, 96, '否', 'A', 15],
-      ['A007', '吳建國', '2026-10-01 08:00', 37.6, 96, 18, 128, 74, 98, '是', null, 'E2VTM5'],
+      ['7A 病房 生命徵象紀錄（範例，虛構資料）'],
+      [],
+      ['病歷號', '姓名', '測量時間', '體溫', '心跳', '呼吸', '血壓', 'SpO2', '氧氣', '意識', 'GCS'],
+      ['A001', '王小明', '2026-10-01 08:00', '36.8℃', '78', '16', '125/78', '98%', 'RA', 'A', 15],
+      ['A001', '王小明', '2026-10-01 14:00', '38.4℃', '104 bpm', '22', '108/66', '94%', '否', '清醒', 15],
+      ['A002', '李美華', '2026-10-01 08:00', '39.3', '128', '26', '88/52', 0.9, 'NC 3L', 'C', 14],
+      ['A003', '陳大同', '2026-10-01 08:00', '96.4°F', '48', '10', '142/88', '95', '否', null, 15],
+      ['A004', '林小芳', '2026-10-01 08:00', '37.2', '92', '18', '132/80', '97', '2 L/min', null, 'E3V4M6'],
+      ['A005', '張志強', '2026-10-01 08:00', '36.5', '70', '14', '１１８／７２', '99', '否', '清醒', 15],
+      ['A005', '張志強', '2026-10-01 08:00', '36.5', '70', '14', '１１８／７２', '99', '否', '清醒', 15],
+      ['A006', '黃淑芬', '2026-10-01 08:00', '37.0', '85', '未測', '120/76', '96', '否', 'A', 15],
+      ['A007', '吳建國', '2026-10-01 08:00', '37.6', '96', '18', '128/74', '98', '是', null, 'E2VTM5'],
+      ['A008', '鄭雅婷', '2026-10-01 08:00', '365', '82', '16', '118/70', '98', '否', 'A', 15],
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), '生命徵象');
@@ -394,7 +489,7 @@
 
   function loadSample() {
     state.wb = sampleWorkbook();
-    useWorkbook('EWS_範例', '目前顯示範例資料（8 筆虛構紀錄）。上傳您的 Excel 即可取代。');
+    useWorkbook('EWS_範例', '目前顯示範例資料（故意做得很亂的虛構紀錄）。上傳您的 Excel 即可取代。');
   }
 
   // 在 claude.ai Artifact 中瀏覽器下載會被封鎖，改用平台的 downloads 功能；一般瀏覽器則直接下載
@@ -441,6 +536,9 @@
   $('file').addEventListener('change', (e) => e.target.files[0] && loadFile(e.target.files[0]));
   $('sheet').addEventListener('change', (e) => loadSheet(Number(e.target.value)));
   $('system').addEventListener('change', () => { if (state.wb) { renderMapping(); compute(); } });
+  $('useClean').addEventListener('change', () => state.wb && applyTable());
+  $('cleanFilter').addEventListener('change', () => state.wb && renderCleaning());
+  $('downloadCleaned').addEventListener('click', downloadCleaned);
   $('globalScale2').addEventListener('change', () => state.wb && compute());
   $('filter').addEventListener('change', () => state.wb && renderResults());
   $('download').addEventListener('click', download);

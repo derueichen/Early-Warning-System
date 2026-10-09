@@ -35,15 +35,33 @@
       </div>
     </section>
 
+    <section id="cleanSection" class="card" hidden>
+      <h2>2. 資料整理</h2>
+      <label class="check"><input id="useClean" type="checkbox" checked> 自動整理原始資料（找標題列、拆血壓、去單位、統一格式、檢查不合理數值）</label>
+      <div id="cleanBody">
+        <ul id="cleanSummary" class="cleanSummary"></ul>
+        <div class="row">
+          <label>整理紀錄
+            <select id="cleanFilter">
+              <option value="attention">只看需注意／已刪除</option>
+              <option value="all">全部變更</option>
+            </select>
+          </label>
+          <button id="downloadCleaned" class="btn secondary" type="button">下載整理後資料</button>
+        </div>
+        <div class="tableWrap logWrap"><table id="cleanLog"></table></div>
+      </div>
+    </section>
+
     <section id="mapSection" class="card" hidden>
-      <h2>2. 確認欄位對應</h2>
+      <h2>3. 確認欄位對應</h2>
       <p class="muted">系統已依欄位名稱自動對應，若不正確請手動調整。NEWS2 需要 7 項；MEWS 需要 5 項（不需血氧與氧氣）。</p>
       <div id="mapping" class="mapping"></div>
       <label class="check"><input id="globalScale2" type="checkbox"> 所有病人皆使用 SpO₂ Scale 2（高碳酸血症呼吸衰竭，目標 SpO₂ 88–92%）</label>
     </section>
 
     <section id="resultSection" class="card" hidden>
-      <h2>3. 結果</h2>
+      <h2>4. 結果</h2>
       <div id="summary" class="summary"></div>
       <div class="row">
         <label>篩選
@@ -71,6 +89,7 @@
 
   <script src="vendor/xlsx.bundle.js"></script>
   <script src="ews.js"></script>
+  <script src="clean.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

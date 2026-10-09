@@ -81,3 +81,7 @@ td.s2 { color: var(--medium-text); }
 .lvl-na { background: var(--na); color: var(--na-text); }
 #criteria table { width: auto; margin: 8px 0 16px; }
 details summary { cursor: pointer; font-weight: 600; }
+.cleanSummary { margin: 8px 0 12px; padding-left: 20px; }
+.logWrap { max-height: 40vh; }
+tr.log-warn td { background: var(--lowmed); color: var(--lowmed-text); }
+tr.log-drop td { background: var(--na); color: var(--na-text); }

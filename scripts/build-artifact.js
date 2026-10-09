@@ -15,6 +15,7 @@ const inline = (file) => `<script>\n${read(file).replace(/<\/script/gi, '<\\/scr
 const body = (xlsxTag) => html.match(/<body>([\s\S]*)<\/body>/)[1]
   .replace(/<script src="vendor\/xlsx\.bundle\.js"><\/script>/, () => xlsxTag)
   .replace(/<script src="ews\.js"><\/script>/, () => inline('ews.js'))
+  .replace(/<script src="clean\.js"><\/script>/, () => inline('clean.js'))
   .replace(/<script src="app\.js"><\/script>/, () => inline('app.js'))
   .trim();
 const style = `<style>\n${read('style.css')}</style>`;
