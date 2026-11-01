@@ -110,9 +110,3 @@ dist/ews-calculator.html          claude.ai Artifact 版（程式庫由 CDN 載�
 執行測試：`node --test tests/*.test.js`
 
 > 本工具僅供臨床輔助參考，不能取代專業醫療判斷。
-
-## 火場 Rehab 檢傷 SOP
-
-[`rehab-sop.html`](rehab-sop.html)：分隊用的火場後勤照護（Rehab）流程圖，判斷消防員應放行、留置或立即後送，
-附生命徵象對照表與紀錄表。依據消防署《消防人員後勤照護指引》與 NFPA 1584，標準不一致時採較嚴格者。
-GitHub Pages 啟用後網址為 https://derueichen.github.io/Early-Warning-System/rehab-sop.html 。
