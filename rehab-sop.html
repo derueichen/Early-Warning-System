@@ -6,500 +6,564 @@
 <title>火場 Rehab 檢傷 SOP</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&family=Noto+Serif+TC:wght@400&family=Inter:wght@400..500&family=Noto+Sans+TC:wght@400..500&display=swap">
 <style>
-/* Layout: a single vertical flowchart spine with decisions branching right (stacking on phones), followed by a vital-sign reference table, pitfalls, record sheet and source notes. */
+/* Layout (Steep style): white paper canvas, oversized regular-weight serif headlines, alternating white/fog bands inside a 1200px container, floating white product artifacts around the hero. Single light theme by design. */
 :root {
-  --bg: #f3f5f8;
-  --surface: #ffffff;
-  --ink: #15202c;
-  --muted: #586473;
-  --line: #c4ccd6;
-  --accent: #1d4a73;
-  --accent-bg: #e2ebf4;
-  --go: #17703f;     --go-bg: #e1f2e8;
-  --hold: #8a5a00;   --hold-bg: #fff2d1;
-  --stop: #b0241c;   --stop-bg: #fce4e1;
-  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
-  --font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --ink: #17191c;
+  --paper: #ffffff;
+  --mist: #f2f2f3;
+  --fog: #fafafb;
+  --slate: #777b86;
+  --ash: #979799;
+  --smoke: #a3a6af;
+  --peach: #fbe1d1;
+  --sienna: #5d2a1a;
+  --hair: #ececec;
+  --font-serif: "Source Serif 4", "Noto Serif TC", "Songti TC", Georgia, serif;
+  --font-sans: "Inter", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --shadow-float: 0 0 0 1px rgba(4,23,43,0.05), 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+  --gutter-l: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0e141b; --surface: #17202a; --ink: #e5eaf0; --muted: #98a4b2; --line: #2f3c4a;
-    --accent: #8cb8e2; --accent-bg: #1b2c3d;
-    --go: #63d396; --go-bg: #12301f; --hold: #f2c14e; --hold-bg: #33290c; --stop: #ff8f84; --stop-bg: #3b1613;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0e141b; --surface: #17202a; --ink: #e5eaf0; --muted: #98a4b2; --line: #2f3c4a;
-  --accent: #8cb8e2; --accent-bg: #1b2c3d;
-  --go: #63d396; --go-bg: #12301f; --hold: #f2c14e; --hold-bg: #33290c; --stop: #ff8f84; --stop-bg: #3b1613;
-  color-scheme: dark;
-}
-
 * { box-sizing: border-box; }
-body {
-  background: var(--bg); color: var(--ink);
-  font-family: var(--font-body); font-size: 15px; line-height: 1.65;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 28px 56px;
+body { background: var(--paper); color: var(--ink); font-family: var(--font-sans); font-size: 17px; line-height: 1.5; font-weight: 400; }
+h1, h2, h3, p, ul, ol { margin: 0; }
+h1, h2 { font-family: var(--font-serif); font-weight: 400; text-wrap: balance; }
+h3 { font-weight: 500; font-size: 20px; line-height: 1.35; text-wrap: balance; }
+ul, ol { padding-left: 1.2em; }
+li + li { margin-top: 4px; }
+em { font-style: italic; }
+.num { font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap; }
+a { color: var(--ink); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+.band { padding-block: 80px; }
+.band.fog { background: var(--fog); }
+.container { max-width: 1200px; margin: 0 auto; padding-left: var(--gutter-l); padding-right: var(--gutter-r); }
+.sec-head { display: flex; flex-direction: column; gap: 12px; margin-bottom: 40px; max-width: 760px; }
+.sec-head h2 { font-size: clamp(34px, 5.4vw, 64px); line-height: 1.2; letter-spacing: -0.015em; }
+.sec-head p { font-size: 18px; color: var(--slate); letter-spacing: -0.009em; }
+.tag { font-size: 14px; color: var(--ash); }
+
+/* Pills */
+.pill { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 20px; border-radius: 9999px; font-size: 16px; border: 1px solid var(--ink); white-space: nowrap; }
+.pill.fill { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.pill.ghost { background: transparent; color: var(--ink); }
+.pill:hover { text-decoration: none; opacity: .88; }
+.lv { display: inline-flex; align-items: center; gap: 6px; border-radius: 9999px; padding: 2px 12px; font-size: 14px; font-weight: 500; white-space: nowrap; border: 1px solid transparent; }
+.lv1 { border-color: var(--ink); color: var(--ink); background: var(--paper); }
+.lv2 { background: var(--peach); color: var(--sienna); }
+.lv3 { background: var(--ink); color: var(--paper); }
+
+/* Nav */
+nav.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 20px; }
+.logo { font-family: var(--font-serif); font-size: 24px; letter-spacing: -0.01em; }
+.links { display: flex; gap: 28px; font-size: 16px; }
+@media (max-width: 860px) { .links { display: none; } }
+
+/* Hero */
+.hero { display: grid; grid-template-columns: 270px minmax(0, 1fr) 270px; gap: 24px; align-items: start; padding-block: 56px 96px; }
+.hero-copy { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 24px; padding-top: 24px; }
+.hero h1 { font-size: clamp(48px, 8vw, 90px); line-height: 1.12; letter-spacing: -0.025em; }
+.hero h1 em { font-family: "Source Serif 4", Georgia, serif; }
+.hero .lede { font-size: 18px; color: var(--slate); max-width: 34em; }
+.btns { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: center; font-size: 14px; color: var(--ash); }
+.art { background: var(--paper); border-radius: 20px; box-shadow: var(--shadow-float); padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.hero-copy { grid-column: 2; grid-row: 1; }
+.art-l { grid-column: 1; grid-row: 1; margin-top: 40px; transform: rotate(-1.5deg); }
+.art-r { grid-column: 3; grid-row: 1; margin-top: 160px; transform: rotate(1.2deg); }
+.art .tag { display: flex; justify-content: space-between; }
+.tiers { display: flex; flex-direction: column; }
+.tiers div { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid var(--hair); font-size: 15px; }
+.metric { font-size: 20px; font-weight: 500; }
+.delta { font-size: 14px; color: var(--slate); }
+.art svg { width: 100%; height: auto; display: block; }
+.composer { width: 100%; max-width: 480px; margin-top: 12px; text-align: left; }
+.composer form { display: flex; align-items: center; gap: 12px; border: 1px solid var(--hair); border-radius: 16px; padding: 10px 10px 10px 16px; }
+.composer label { font-size: 15px; color: var(--slate); white-space: nowrap; }
+.composer input { flex: 1; min-width: 0; border: 0; outline: 0; font: inherit; font-size: 16px; color: var(--ink); background: transparent; }
+.composer input::placeholder { color: var(--smoke); }
+.composer button { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 9999px; border: 0; background: var(--ink); color: var(--paper); font-size: 18px; cursor: pointer; }
+.composer .out { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 4px 4px 0; flex-wrap: wrap; }
+.composer .out .metric { font-size: 26px; letter-spacing: -0.009em; }
+@media (max-width: 1080px) {
+  .hero { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero-copy { grid-column: 1 / -1; grid-row: 1; }
+  .art-l, .art-r { grid-row: 2; margin-top: 0; transform: none; }
+  .art-l { grid-column: 1; }
+  .art-r { grid-column: 2; }
 }
-.wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 44px; }
-h1, h2, h3 { text-wrap: balance; margin: 0; }
-p, ul, ol { margin: 0; }
-ul { padding-left: 1.2em; }
-.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
-
-/* Header */
-header { display: flex; flex-direction: column; gap: 10px; border-bottom: 2px solid var(--ink); padding-bottom: 18px; }
-.eyebrow { font-size: 12px; letter-spacing: .12em; color: var(--muted); font-weight: 700; }
-h1 { font-size: clamp(26px, 5vw, 38px); font-weight: 900; letter-spacing: .02em; }
-.lede { color: var(--muted); max-width: 68ch; }
-.meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; }
-.chip { border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; background: var(--surface); }
-.chip.warn { border-color: var(--hold); color: var(--hold); background: var(--hold-bg); font-weight: 700; }
-
-section { display: flex; flex-direction: column; gap: 16px; }
-h2 { font-size: 22px; font-weight: 900; display: flex; align-items: baseline; gap: 10px; }
-h2 .sec { font-family: var(--font-num); font-size: 14px; color: var(--accent); font-weight: 600; }
-.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--muted); }
-.legend span { display: inline-flex; align-items: center; gap: 6px; }
-.sw { width: 14px; height: 14px; border-radius: 3px; border: 2px solid; display: inline-block; }
+@media (max-width: 640px) {
+  .hero { grid-template-columns: minmax(0, 1fr); padding-block: 24px 64px; }
+  .art-l, .art-r { grid-column: 1; grid-row: auto; }
+}
 
 /* Flowchart */
-.flow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 0; }
-.main { grid-column: 1; display: flex; flex-direction: column; align-items: stretch; min-width: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 32px; }
+.flow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.main { grid-column: 1; display: flex; flex-direction: column; min-width: 0; }
 .side { grid-column: 2; display: flex; align-items: center; min-width: 0; }
-.side .h { flex: 0 0 40px; height: 2px; background: var(--ink); position: relative; }
-.side .h::after { content: ""; position: absolute; right: -1px; top: -5px; border-left: 8px solid var(--ink); border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
-.side .yes { position: absolute; left: 6px; top: -22px; font-size: 13px; font-weight: 700; color: var(--ink); }
-.side > .node { flex: 1; min-width: 0; }
-
-.v { height: 30px; width: 2px; background: var(--ink); margin: 0 auto; position: relative; }
-.v::after { content: ""; position: absolute; bottom: -1px; left: -5px; border-top: 8px solid var(--ink); border-left: 6px solid transparent; border-right: 6px solid transparent; }
-.v .no { position: absolute; left: 10px; top: 4px; font-size: 13px; font-weight: 700; white-space: nowrap; }
-
-.node { background: var(--surface); border: 1.5px solid var(--line); border-radius: 6px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.node h3 { font-size: 16px; font-weight: 700; }
-.node .t { font-family: var(--font-num); font-size: 12px; font-weight: 600; color: var(--accent); letter-spacing: .04em; }
-.node ul { font-size: 14px; }
-.node .note { font-size: 13px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 6px; }
-.dec {
-  background: var(--accent-bg); color: var(--ink);
-  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
-  padding: 14px 30px; text-align: center; font-weight: 700; font-size: 15px;
-}
-.dec small { display: block; font-weight: 500; font-size: 12.5px; color: var(--muted); }
-.term { border-width: 2px; }
-.term h3 { font-size: 17px; font-weight: 900; }
-.stop { border-color: var(--stop); background: var(--stop-bg); }
-.stop h3 { color: var(--stop); }
-.hold { border-color: var(--hold); background: var(--hold-bg); }
-.hold h3 { color: var(--hold); }
-.go { border-color: var(--go); background: var(--go-bg); }
-.go h3 { color: var(--go); }
-.loop { font-size: 13px; color: var(--hold); font-weight: 700; }
-.spacer { grid-column: 1 / -1; height: 0; }
-
-@media (max-width: 720px) {
+.side > .node { flex: 1; }
+.h { flex: 0 0 48px; height: 1px; background: var(--ink); position: relative; }
+.h::after { content: ""; position: absolute; right: 0; top: -4px; border-left: 7px solid var(--ink); border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent; }
+.yes { position: absolute; left: 8px; top: -24px; font-size: 14px; color: var(--slate); }
+.v { height: 36px; width: 1px; background: var(--ink); margin: 0 auto; position: relative; }
+.v::after { content: ""; position: absolute; bottom: 0; left: -4px; border-top: 7px solid var(--ink); border-left: 4.5px solid transparent; border-right: 4.5px solid transparent; }
+.no { position: absolute; left: 12px; top: 6px; font-size: 14px; color: var(--slate); white-space: nowrap; }
+.node { background: var(--mist); border-radius: 24px; padding: 20px 24px; display: flex; flex-direction: column; gap: 8px; min-width: 0; font-size: 16px; }
+.node .note { font-size: 15px; color: var(--slate); padding-top: 10px; border-top: 1px solid var(--hair); }
+.dec { background: var(--paper); border: 1px solid var(--ink); border-radius: 9999px; padding: 16px 32px; text-align: center; font-weight: 500; font-size: 17px; }
+.dec small { display: block; font-weight: 400; font-size: 14px; color: var(--slate); }
+.node.go { background: var(--paper); border: 1px solid var(--ink); }
+.node.hold { background: var(--peach); color: var(--sienna); }
+.node.hold .tag, .node.hold .note { color: var(--sienna); }
+.node.stop { background: var(--ink); color: var(--paper); }
+.node.stop .tag { color: var(--smoke); }
+.loop { font-size: 15px; font-weight: 500; }
+@media (max-width: 760px) {
   .flow { grid-template-columns: minmax(0, 1fr); }
-  .side { grid-column: 1; flex-direction: column; align-items: stretch; }
-  .side .h { flex: 0 0 34px; width: 2px; height: 34px; margin: 0 auto; }
-  .side .h::after { right: auto; left: -5px; top: auto; bottom: -1px; border-top: 8px solid var(--ink); border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 0; }
-  .side .yes { left: 10px; top: 6px; }
-  .side { padding-bottom: 6px; }
-  .side + .main .v:first-child { margin-top: 8px; }
+  .side { grid-column: 1; flex-direction: column; align-items: stretch; padding-bottom: 8px; }
+  .h { flex: 0 0 36px; width: 1px; height: 36px; margin: 0 auto; }
+  .h::after { right: auto; top: auto; bottom: 0; left: -4px; border-top: 7px solid var(--ink); border-left: 4.5px solid transparent; border-right: 4.5px solid transparent; border-bottom: 0; }
+  .yes { left: 12px; top: 6px; }
 }
 
-/* Red flag box */
-.flags { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-.flag { background: var(--surface); border: 1.5px solid var(--stop); border-radius: 6px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
-.flag h3 { font-size: 15px; color: var(--stop); }
-.flag ul { font-size: 14px; }
+/* Red-flag cards */
+.grid3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 24px; }
+.card { background: var(--mist); border-radius: 24px; padding: 24px; display: flex; flex-direction: column; gap: 10px; font-size: 16px; min-width: 0; }
+.card .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 
-/* Reference table */
-.tbl-wrap { overflow-x: auto; }
-table { border-collapse: collapse; width: 100%; background: var(--surface); font-size: 14px; }
-th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
-thead th { font-size: 13px; letter-spacing: .06em; }
-thead th.go { color: var(--go); background: var(--go-bg); }
-thead th.hold { color: var(--hold); background: var(--hold-bg); }
-thead th.stop { color: var(--stop); background: var(--stop-bg); }
-tbody th { width: 13%; font-weight: 700; background: var(--bg); }
+/* Tables */
+.tbl { border: 1px solid var(--hair); border-radius: 24px; overflow-x: auto; background: var(--paper); }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { padding: 16px 20px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--hair); }
+td + td, th + td, th + th { border-left: 1px solid var(--hair); }
+tbody tr:last-child > * { border-bottom: 0; }
+thead th { font-weight: 400; background: var(--fog); }
+tbody th { font-weight: 500; white-space: nowrap; }
 td ul { padding-left: 1.1em; }
-td .src { color: var(--muted); font-size: 12px; }
-@media (max-width: 720px) {
+.src { display: block; font-size: 13px; color: var(--ash); margin-top: 4px; }
+@media (max-width: 760px) {
   table.stack, table.stack tbody, table.stack tr, table.stack th, table.stack td { display: block; width: 100%; }
   table.stack thead { display: none; }
-  table.stack tr { margin-bottom: 12px; border: 1px solid var(--line); }
-  table.stack td, table.stack tbody th { border: 0; border-top: 1px solid var(--line); }
-  table.stack td::before { content: attr(data-l); display: block; font-size: 12px; font-weight: 700; letter-spacing: .06em; margin-bottom: 2px; }
-  table.stack td.go::before { color: var(--go); }
-  table.stack td.hold::before { color: var(--hold); }
-  table.stack td.stop::before { color: var(--stop); }
+  table.stack tr { border-bottom: 1px solid var(--hair); }
+  table.stack tbody tr:last-child { border-bottom: 0; }
+  table.stack th, table.stack td { border: 0; padding: 10px 20px; }
+  table.stack tbody th { padding-top: 18px; font-size: 18px; }
+  table.stack td::before { content: attr(data-l); display: inline-flex; margin-bottom: 6px; border-radius: 9999px; padding: 1px 10px; font-size: 13px; font-weight: 500; }
+  table.stack td.c1::before { border: 1px solid var(--ink); }
+  table.stack td.c2::before { background: var(--peach); color: var(--sienna); }
+  table.stack td.c3::before { background: var(--ink); color: var(--paper); }
 }
+.rec td { height: 40px; min-width: 88px; }
+.sign { margin-top: 20px; font-size: 15px; color: var(--slate); line-height: 2; }
 
 /* Pitfalls */
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
-.card h3 { font-size: 16px; }
-.card p { font-size: 14px; }
-.big { font-family: var(--font-num); font-size: 22px; font-weight: 600; color: var(--accent); line-height: 1.2; }
-.big small { font-family: var(--font-body); font-size: 12px; color: var(--muted); font-weight: 500; display: block; }
-.advice { border: 1.5px dashed var(--accent); border-radius: 6px; padding: 14px 16px; background: var(--surface); display: flex; flex-direction: column; gap: 6px; }
-.advice h3 { font-size: 15px; color: var(--accent); }
-.advice ol { font-size: 14px; padding-left: 1.3em; }
+.big { font-family: var(--font-serif); font-size: 44px; line-height: 1.1; letter-spacing: -0.015em; }
+.advice { margin-top: 24px; background: var(--paper); border: 1px solid var(--hair); border-radius: 24px; padding: 28px; display: flex; flex-direction: column; gap: 12px; }
+.advice ol { font-size: 16px; }
+.more { font-size: 16px; padding-top: 4px; }
 
-/* Record sheet */
-.rec td { height: 34px; }
-.rec th { white-space: nowrap; }
+/* Notes */
+.notes { color: var(--slate); font-size: 15px; display: flex; flex-direction: column; gap: 16px; max-width: 820px; }
+.notes ol li + li { margin-top: 8px; }
+.notes strong { color: var(--ink); font-weight: 500; }
+footer { padding-block: 40px; color: var(--ash); font-size: 14px; }
 
-.notes { font-size: 13.5px; color: var(--muted); display: flex; flex-direction: column; gap: 10px; }
-.notes ol { padding-left: 1.3em; display: flex; flex-direction: column; gap: 4px; }
-.notes strong { color: var(--ink); }
-
+@media (prefers-reduced-motion: reduce) { .art-l, .art-r { transform: none; } }
 @media print {
-  body { background: #fff; padding-block: 0; }
-  .wrap { gap: 20px; }
-  section { break-inside: avoid-page; }
+  .band { padding-block: 24px; }
+  nav.top .links, .btns, .composer { display: none; }
+  .art { box-shadow: 0 0 0 1px var(--hair); }
 }
 </style>
 </head>
 <body>
 
-<div class="wrap">
+<header class="band" style="padding-block:0">
+  <div class="container">
+    <nav class="top" aria-label="頁面導覽">
+      <a class="logo" href="#top"><em>Rehab</em> SOP</a>
+      <div class="links">
+        <a href="#flow">流程圖</a>
+        <a href="#red">後送條件</a>
+        <a href="#table">對照表</a>
+        <a href="#pitfalls">放行盲點</a>
+        <a href="#record">紀錄表</a>
+      </div>
+      <a class="pill fill" href="#flow">開始檢傷</a>
+    </nav>
 
-<header>
-  <div class="eyebrow">分隊標準作業程序 · 火場後勤照護（Rehab）</div>
-  <h1>火場 Rehab 檢傷 SOP</h1>
-  <p class="lede">決定每位進入 Rehab 的消防員要「放行重返火場」「留置監測」或「立即醫療後送」。依據內政部消防署《消防人員後勤照護指引》健康評估三分級，並對照 NFPA 1584 與美國區域 EMS 流程（VDH、MSFCA、MLREMS、SCCMCA）。兩邊標準不一致時，本 SOP 採較嚴格的一方。</p>
-  <div class="meta">
-    <span class="chip">版本：草案 2026-11</span>
-    <span class="chip">適用：分隊 EMT／Rehab 區管理員</span>
-    <span class="chip warn">實施前須經醫療指導醫師審核</span>
+    <div class="hero" id="top">
+      <div class="hero-copy">
+        <span class="tag">分隊標準作業程序 · 火場後勤照護</span>
+        <h1>火場 <em>Rehab</em><br>檢傷 SOP</h1>
+        <p class="lede">決定每位消防員要放行重返火場、留置監測，還是立即醫療後送。依據消防署《消防人員後勤照護指引》三分級，對照 NFPA 1584 與美國區域 EMS 流程；標準不一致時採較嚴格者。</p>
+        <div class="btns">
+          <a class="pill fill" href="#flow">看處置流程</a>
+          <a class="pill ghost" href="#table">生命徵象對照表</a>
+        </div>
+        <div class="meta"><span>版本：草案 2026-11</span><span>適用：分隊 EMT／Rehab 區管理員</span><span>實施前須經醫療指導醫師審核</span></div>
+
+        <div class="art composer">
+          <span class="tag">T0 報到時先算好：進入時心率上限</span>
+          <form id="hrForm" autocomplete="off">
+            <label for="age">年齡</label>
+            <input id="age" type="number" inputmode="numeric" min="16" max="80" value="35" placeholder="輸入消防員年齡…">
+            <button type="submit" aria-label="計算">→</button>
+          </form>
+          <div class="out">
+            <span class="metric"><span id="hrMax">185</span> bpm</span>
+            <span class="delta">220 − 年齡（範例 35 歲）。進入時超過 → 立即後送</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="art art-l">
+        <div class="tag"><span>健康評估三分級</span><span>消防署</span></div>
+        <div class="tiers">
+          <div><span>正常</span><span class="lv lv1">第一級 放行</span></div>
+          <div><span>異常需監測</span><span class="lv lv2">第二級 留置</span></div>
+          <div><span>緊急危重</span><span class="lv lv3">第三級 後送</span></div>
+        </div>
+      </div>
+
+      <div class="art art-r">
+        <div class="tag"><span>休息 15 分鐘後心率</span><span>CDC</span></div>
+        <span class="metric">101.5 bpm</span>
+        <span class="delta">↓ 自撤出時 162 · 回到基線需 50–80 分鐘</span>
+        <svg viewBox="0 0 260 96" role="img" aria-label="滅火結束後心率由 162 降到 101.5，再於 50 到 80 分鐘回到基線 77.3">
+          <path d="M8 18 C 24 42, 38 58, 54 62 S 150 78, 206 80 L 252 80" fill="none" stroke="#5d2a1a" stroke-width="2" stroke-linecap="round"></path>
+          <circle cx="8" cy="18" r="3.5" fill="#5d2a1a"></circle>
+          <circle cx="54" cy="62" r="3.5" fill="#5d2a1a"></circle>
+          <circle cx="206" cy="80" r="3.5" fill="#5d2a1a"></circle>
+          <text x="16" y="14" font-size="11" fill="#777b86">162</text>
+          <text x="62" y="56" font-size="11" fill="#777b86">101.5</text>
+          <text x="186" y="70" font-size="11" fill="#777b86">77.3</text>
+        </svg>
+      </div>
+    </div>
   </div>
 </header>
 
-<section aria-labelledby="s1">
-  <h2 id="s1"><span class="sec">01</span>處置流程圖</h2>
-  <div class="legend">
-    <span><i class="sw" style="border-color:var(--go);background:var(--go-bg)"></i>第一級：放行</span>
-    <span><i class="sw" style="border-color:var(--hold);background:var(--hold-bg)"></i>第二級：留置監測</span>
-    <span><i class="sw" style="border-color:var(--stop);background:var(--stop-bg)"></i>第三級：立即後送</span>
-    <span><i class="sw" style="border-color:var(--accent-bg);background:var(--accent-bg)"></i>判斷點</span>
-  </div>
-
-  <div class="flow">
-    <!-- T0 check-in -->
-    <div class="main">
-      <div class="node">
-        <span class="t">T0 · 進入 Rehab</span>
-        <h3>報到登錄、卸裝、補水</h3>
-        <ul>
-          <li>登錄姓名、<b>年齡</b>、<b>是否吸菸</b>、進入時間、剛完成的任務</li>
-          <li>卸除 SCBA、頭盔、防護衣；坐下休息，補水，遮陽或保暖</li>
-          <li>先算好此人的心率上限：<span class="num">220 − 年齡</span></li>
-        </ul>
-      </div>
-      <div class="v"></div>
-      <div class="node">
-        <span class="t">T0 · 初評</span>
-        <h3>量測生命徵象 ＋ 臨床評估</h3>
-        <ul>
-          <li>HR（觸診是否規則）、BP、RR、SpO₂、SpCO、口溫</li>
-          <li>意識、言語、步態；主訴：胸痛、氣促、頭暈、噁心</li>
-        </ul>
-        <p class="note">撤出火場後約 7 分鐘內核心體溫仍會上升，剛撤出時量到的體溫可能低估熱負荷，T10 必須再量一次。</p>
-      </div>
-      <div class="v"></div>
+<section class="band fog" id="flow" aria-labelledby="h-flow">
+  <div class="container">
+    <div class="sec-head">
+      <span class="tag">01 · 處置流程</span>
+      <h2 id="h-flow">從報到到放行，每一步怎麼判斷</h2>
+      <p>T0 初評、T10／T15／T20 複評。任何時間點符合「立即後送」條件，就直接後送。</p>
     </div>
-    <div class="side"></div>
-
-    <!-- Decision: red flags at entry -->
-    <div class="main">
-      <div class="dec">符合任一「立即後送」條件？<small>見下方紅色清單 R1–R6</small></div>
-    </div>
-    <div class="side">
-      <div class="h"><span class="yes">是</span></div>
-      <div class="node term stop">
-        <h3>第三級：立即後送</h3>
-        <ul>
-          <li>移至醫療處置區，通報指揮官與救護車</li>
-          <li>心臟相關：執行 12 導程心電圖</li>
-          <li>CO 中毒：高流量氧氣</li>
-          <li>中暑：立即主動降溫</li>
-        </ul>
-      </div>
+    <div class="legend">
+      <span class="lv lv1">第一級 放行</span>
+      <span class="lv lv2">第二級 留置監測</span>
+      <span class="lv lv3">第三級 立即後送</span>
     </div>
 
-    <div class="main">
-      <div class="v"><span class="no">否</span></div>
-      <div class="dec">任一數值落在「留置」範圍？<small>見第 02 節黃色欄</small></div>
-    </div>
-    <div class="side">
-      <div class="h"><span class="yes">是</span></div>
-      <div class="node term hold">
-        <h3>第二級：移至醫療處置區</h3>
-        <ul>
-          <li>嚴密監測，禁止穿回防護衣</li>
-          <li>依異常項目處置：主動降溫、給氧、補水</li>
-          <li>照樣進入下方 T10／T15／T20 複評</li>
-        </ul>
+    <div class="flow">
+      <div class="main">
+        <div class="node">
+          <span class="tag">T0 · 進入 Rehab</span>
+          <h3>報到登錄、卸裝、補水</h3>
+          <ul>
+            <li>登錄姓名、年齡、是否吸菸、進入時間、剛完成的任務</li>
+            <li>卸除 SCBA、頭盔、防護衣；坐下休息，補水，遮陽或保暖</li>
+            <li>先算好此人的心率上限：<span class="num">220 − 年齡</span></li>
+          </ul>
+        </div>
+        <div class="v"></div>
+        <div class="node">
+          <span class="tag">T0 · 初評</span>
+          <h3>量測生命徵象與臨床評估</h3>
+          <ul>
+            <li>HR（觸診是否規則）、BP、RR、SpO₂、SpCO、口溫</li>
+            <li>意識、言語、步態；主訴：胸痛、氣促、頭暈、噁心</li>
+          </ul>
+          <p class="note">撤出火場後約 7 分鐘內核心體溫仍會上升，剛撤出時的體溫可能低估熱負荷，T10 必須再量一次。</p>
+        </div>
+        <div class="v"></div>
       </div>
-    </div>
+      <div class="side"></div>
 
-    <!-- Rest and recheck -->
-    <div class="main">
-      <div class="v"><span class="no">否 → 一般 Rehab 區休息</span></div>
-      <div class="node">
-        <span class="t">T10 · 休息 10 分鐘</span>
-        <h3>複測 HR、口溫、SpCO</h3>
-        <ul>
-          <li>HR 仍 <span class="num">&gt;100</span>：持續追蹤；若持續達 20 分鐘，列入後勤照護</li>
-          <li>HR 持續 <span class="num">&gt;110</span>：改列第二級，移至醫療處置區</li>
-          <li>體溫持續上升超過 20 分鐘：特別關注並持續監測</li>
-        </ul>
+      <div class="main">
+        <div class="dec">符合任一「立即後送」條件？<small>見後送條件 R1–R6</small></div>
       </div>
-      <div class="v"></div>
-      <div class="node">
-        <span class="t">T15 · 休息 15 分鐘</span>
-        <h3>複測 BP</h3>
-        <ul>
-          <li>仍 <span class="num">&gt;140/90</span>：繼續留置，T20 再測</li>
-          <li>收縮壓比入場時掉超過 <span class="num">20 mmHg</span> 或有頭暈：記錄並延長觀察（運動後低血壓，見第 03 節）</li>
-        </ul>
+      <div class="side">
+        <div class="h"><span class="yes">是</span></div>
+        <div class="node stop">
+          <span class="tag">第三級</span>
+          <h3>立即後送</h3>
+          <ul>
+            <li>移至醫療處置區，通報指揮官與救護車</li>
+            <li>心臟相關：執行 12 導程心電圖</li>
+            <li>CO 中毒：高流量氧氣</li>
+            <li>中暑：立即主動降溫</li>
+          </ul>
+        </div>
       </div>
-      <div class="v"></div>
-      <div class="node">
-        <span class="t">T20 · 休息 20 分鐘</span>
-        <h3>完整複評：全部生命徵象 ＋ 臨床評估</h3>
-      </div>
-      <div class="v"></div>
-    </div>
-    <div class="side"></div>
 
-    <div class="main">
-      <div class="dec">符合任一「立即後送」條件？<small>含 HR &gt;140、降溫後口溫仍 &gt;38.1 °C</small></div>
-    </div>
-    <div class="side">
-      <div class="h"><span class="yes">是</span></div>
-      <div class="node term stop">
-        <h3>第三級：立即後送</h3>
-        <p>同上方紅色處置。</p>
+      <div class="main">
+        <div class="v"><span class="no">否</span></div>
+        <div class="dec">任一數值落在「留置」範圍？<small>見對照表第二級欄</small></div>
       </div>
-    </div>
-
-    <div class="main">
-      <div class="v"><span class="no">否</span></div>
-      <div class="dec">「全部」放行標準皆達成，且臨床評估正常？<small>見第 02 節綠色欄，少一項都不放行</small></div>
-    </div>
-    <div class="side">
-      <div class="h"><span class="yes">是</span></div>
-      <div class="node term go">
-        <h3>第一級：放行（Return to Duty）</h3>
-        <ul>
-          <li>記錄放行時間與數值，由 Rehab 管理員簽名</li>
-          <li>執行第 03 節的放行後注意事項</li>
-        </ul>
+      <div class="side">
+        <div class="h"><span class="yes">是</span></div>
+        <div class="node hold">
+          <span class="tag">第二級</span>
+          <h3>移至醫療處置區</h3>
+          <ul>
+            <li>嚴密監測，禁止穿回防護衣</li>
+            <li>依異常項目處置：主動降溫、給氧、補水</li>
+            <li>照樣進入下方 T10／T15／T20 複評</li>
+          </ul>
+        </div>
       </div>
-    </div>
 
-    <div class="main">
-      <div class="v"><span class="no">否</span></div>
-      <div class="node term hold">
-        <h3>第二級：繼續留置</h3>
-        <ul>
-          <li>20 分鐘後 HR 仍 <span class="num">&gt;120</span>：強制留置</li>
-          <li>每 10 分鐘複評一次，回到上方 T20 判斷點</li>
-          <li>持續未改善或惡化：回報醫療指導醫師決定是否後送</li>
-        </ul>
-        <p class="loop">↺ 每 10 分鐘回到 T20 判斷</p>
+      <div class="main">
+        <div class="v"><span class="no">否，一般 Rehab 區休息</span></div>
+        <div class="node">
+          <span class="tag">T10 · 休息 10 分鐘</span>
+          <h3>複測 HR、口溫、SpCO</h3>
+          <ul>
+            <li>HR 仍 <span class="num">&gt;100</span>：持續追蹤；持續達 20 分鐘則列入後勤照護</li>
+            <li>HR 持續 <span class="num">&gt;110</span>：改列第二級，移至醫療處置區</li>
+            <li>體溫持續上升超過 20 分鐘：特別關注並持續監測</li>
+          </ul>
+        </div>
+        <div class="v"></div>
+        <div class="node">
+          <span class="tag">T15 · 休息 15 分鐘</span>
+          <h3>複測 BP</h3>
+          <ul>
+            <li>仍 <span class="num">&gt;140/90</span>：繼續留置，T20 再測</li>
+            <li>收縮壓比入場時掉超過 <span class="num">20 mmHg</span> 或有頭暈：記錄並延長觀察</li>
+          </ul>
+        </div>
+        <div class="v"></div>
+        <div class="node">
+          <span class="tag">T20 · 休息 20 分鐘</span>
+          <h3>完整複評：全部生命徵象與臨床評估</h3>
+        </div>
+        <div class="v"></div>
       </div>
-    </div>
-    <div class="side"></div>
-  </div>
-</section>
+      <div class="side"></div>
 
-<section aria-labelledby="sR">
-  <h2 id="sR"><span class="sec">R</span>立即後送條件（任何時間點，符合任一項即啟動）</h2>
-  <div class="flags">
-    <div class="flag">
-      <h3>R1 心臟</h3>
-      <ul>
-        <li>剛進入時 HR <span class="num">&gt; 220 − 年齡</span>（取十位數近似）</li>
-        <li>休息 20 分鐘後 HR 仍 <span class="num">&gt;140</span></li>
-        <li>新發生的不規則脈搏</li>
-        <li>胸痛、疑似心肌梗塞</li>
-      </ul>
-    </div>
-    <div class="flag">
-      <h3>R2 血壓</h3>
-      <ul>
-        <li>SBP <span class="num">&lt;100 mmHg</span>（NFPA／明尼蘇達 ALS）</li>
-        <li>SBP <span class="num">&lt;80 mmHg</span>：消防署列需立即緊急救護</li>
-        <li>休克徵象</li>
-      </ul>
-    </div>
-    <div class="flag">
-      <h3>R3 呼吸</h3>
-      <ul>
-        <li>RR <span class="num">&gt;30</span>（台灣一般救護危急：<span class="num">&gt;29</span> 或 <span class="num">&lt;10</span>）</li>
-        <li>SpO₂ <span class="num">&lt;85%</span></li>
-        <li>給氧後 SpO₂ 仍 <span class="num">&lt;95%</span></li>
-      </ul>
-    </div>
-    <div class="flag">
-      <h3>R4 一氧化碳</h3>
-      <ul>
-        <li>SpCO <span class="num">&gt;15%</span>：高流量氧氣並送醫</li>
-        <li>任何 SpCO 數值，合併胸痛、氣促或意識改變</li>
-      </ul>
-    </div>
-    <div class="flag">
-      <h3>R5 體溫</h3>
-      <ul>
-        <li>休息 20 分鐘並主動降溫後，口溫仍 <span class="num">&gt;38.1 °C</span>（100.6 °F）</li>
-        <li>體溫 <span class="num">&gt;40.0 °C</span> 合併意識改變、皮膚乾熱（中暑）</li>
-        <li>熱衰竭、熱痙攣、低體溫或凍傷</li>
-      </ul>
-    </div>
-    <div class="flag">
-      <h3>R6 神智與外觀</h3>
-      <ul>
-        <li>意識改變、言語不清、步態不穩</li>
-        <li>救護人員判斷病況危及生命</li>
-      </ul>
+      <div class="main">
+        <div class="dec">符合任一「立即後送」條件？<small>含 HR &gt;140、降溫後口溫仍 &gt;38.1 °C</small></div>
+      </div>
+      <div class="side">
+        <div class="h"><span class="yes">是</span></div>
+        <div class="node stop">
+          <span class="tag">第三級</span>
+          <h3>立即後送</h3>
+          <p>處置同上。</p>
+        </div>
+      </div>
+
+      <div class="main">
+        <div class="v"><span class="no">否</span></div>
+        <div class="dec">全部放行標準皆達成，且臨床評估正常？<small>少一項都不放行</small></div>
+      </div>
+      <div class="side">
+        <div class="h"><span class="yes">是</span></div>
+        <div class="node go">
+          <span class="tag">第一級</span>
+          <h3>放行 <em>Return to Duty</em></h3>
+          <ul>
+            <li>記錄放行時間與數值，由 Rehab 管理員簽名</li>
+            <li>執行「放行盲點」一節的注意事項</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="main">
+        <div class="v"><span class="no">否</span></div>
+        <div class="node hold">
+          <span class="tag">第二級</span>
+          <h3>繼續留置</h3>
+          <ul>
+            <li>20 分鐘後 HR 仍 <span class="num">&gt;120</span>：強制留置</li>
+            <li>每 10 分鐘複評一次，回到上方 T20 判斷</li>
+            <li>持續未改善或惡化：回報醫療指導醫師決定是否後送</li>
+          </ul>
+          <p class="loop">↺ 每 10 分鐘回到 T20 判斷</p>
+        </div>
+      </div>
+      <div class="side"></div>
     </div>
   </div>
 </section>
 
-<section aria-labelledby="s2">
-  <h2 id="s2"><span class="sec">02</span>生命徵象判讀對照表</h2>
-  <div class="tbl-wrap">
-    <table class="stack">
-      <thead>
-        <tr>
-          <th>項目</th>
-          <th class="go">第一級：放行（T20 起，全部達成）</th>
-          <th class="hold">第二級：留置／禁止放行</th>
-          <th class="stop">第三級：立即後送</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th>心率 HR</th>
-          <td class="go" data-l="放行"><span class="num">&lt;100 bpm</span><div class="src">部分區域 EMS 用 ≤110 或 &lt;110，本分隊採 &lt;100</div></td>
-          <td class="hold" data-l="留置"><ul><li>休息 10 分鐘後 <span class="num">&gt;100</span>，持續 20 分鐘</li><li>持續 <span class="num">&gt;110</span>（消防署第二級）</li><li>20 分鐘後 <span class="num">&gt;120</span>：強制留置</li></ul></td>
-          <td class="stop" data-l="後送"><ul><li>20 分鐘後 <span class="num">&gt;140</span></li><li>進入時 <span class="num">&gt;220−年齡</span></li><li>新發不規則脈搏 → 12 導程</li></ul></td>
-        </tr>
-        <tr>
-          <th>血壓 BP</th>
-          <td class="go" data-l="放行"><span class="num">&lt;140/90</span>，且 SBP <span class="num">≥100</span></td>
-          <td class="hold" data-l="留置"><ul><li>15 分鐘後 <span class="num">&gt;140/90</span>：續留置</li><li>SBP <span class="num">&gt;160</span> 或 DBP <span class="num">&gt;100</span>：嚴禁重返火場</li></ul></td>
-          <td class="stop" data-l="後送"><ul><li>SBP <span class="num">&lt;100</span>（NFPA／MN ALS）</li><li>SBP <span class="num">&lt;80</span>（消防署）</li></ul></td>
-        </tr>
-        <tr>
-          <th>體溫 BT</th>
-          <td class="go" data-l="放行">口溫 <span class="num">≤38.0 °C</span>，且未持續上升</td>
-          <td class="hold" data-l="留置"><ul><li>口溫 <span class="num">&gt;38.0 °C</span>：禁止穿回防護衣，主動降溫</li><li>持續上升超過 20 分鐘</li></ul></td>
-          <td class="stop" data-l="後送"><ul><li>20 分鐘＋降溫後仍 <span class="num">&gt;38.1 °C</span></li><li><span class="num">&gt;40.0 °C</span>＋意識改變＋皮膚乾熱</li></ul></td>
-        </tr>
-        <tr>
-          <th>呼吸 RR</th>
-          <td class="go" data-l="放行"><span class="num">12–20 次/分</span>，無呼吸困難</td>
-          <td class="hold" data-l="留置">休息後仍 <span class="num">&gt;20</span>，或有呼吸困難</td>
-          <td class="stop" data-l="後送"><span class="num">&gt;30</span>（台灣 <span class="num">&gt;29</span> 或 <span class="num">&lt;10</span>）</td>
-        </tr>
-        <tr>
-          <th>SpO₂</th>
-          <td class="go" data-l="放行">室內空氣 <span class="num">≥95%</span><div class="src">部分規範要求 ≥96%</div></td>
-          <td class="hold" data-l="留置">室內空氣 <span class="num">&lt;95%</span></td>
-          <td class="stop" data-l="後送"><span class="num">&lt;85%</span>，或給氧後仍 <span class="num">&lt;95%</span></td>
-        </tr>
-        <tr>
-          <th>SpCO</th>
-          <td class="go" data-l="放行">非吸菸者 <span class="num">&lt;5%</span><br>吸菸者 <span class="num">&lt;10%</span></td>
-          <td class="hold" data-l="留置"><ul><li><span class="num">≥5%</span>：不得離開 Rehab 區</li><li><span class="num">5–10%</span> 且無症狀：呼吸新鮮空氣至 <span class="num">&lt;5%</span></li><li><span class="num">10–15%</span>：醫療處置區給高流量氧至 <span class="num">&lt;5%</span></li></ul></td>
-          <td class="stop" data-l="後送"><ul><li><span class="num">&gt;15%</span>：高流量氧＋送醫</li><li>任何數值合併胸痛、氣促、意識改變</li></ul></td>
-        </tr>
-        <tr>
-          <th>臨床評估</th>
-          <td class="go" data-l="放行">意識、言語、步態正常；無主訴；本人表示可以繼續</td>
-          <td class="hold" data-l="留置">頭暈、疲倦、噁心、肌肉抽筋等輕度症狀</td>
-          <td class="stop" data-l="後送">意識改變、胸痛、休克、中暑、熱衰竭、低體溫／凍傷</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section aria-labelledby="s3">
-  <h2 id="s3"><span class="sec">03</span>數值正常不代表安全：放行前後的三個盲點</h2>
-  <div class="cards">
-    <div class="card">
-      <h3>症狀和數值對不上</h3>
-      <div class="big">10–20 分鐘<small>多數人在此時間內數值就落入放行範圍</small></div>
-      <p>研究（PMID 26953865）發現，有醫療症狀的消防員與無症狀者的生命徵象沒有顯著差異。NFPA 1584 附錄強調：不能只看數值放行，一定要評估步態、言語、神智與主訴。</p>
+<section class="band" id="red" aria-labelledby="h-red">
+  <div class="container">
+    <div class="sec-head">
+      <span class="tag">R · 立即後送條件</span>
+      <h2 id="h-red">任何時間點，符合一項就後送</h2>
     </div>
-    <div class="card">
-      <h3>體溫續升、心率恢復慢</h3>
-      <div class="big">50–80 分鐘<small>心率回到基線所需時間（滅火結束後起算）</small></div>
-      <p>CDC 實火訓練研究：撤出時平均 HR 162，Rehab 15 分鐘後仍有 101.5；核心體溫在撤出後 7 分鐘內從 37.8 升到 37.9 °C，恢復期開始後約 60 分鐘才回基線。口溫比核心低約 0.55 °C、耳溫低約 1.1 °C。治療病人，不是治療溫度計。</p>
-    </div>
-    <div class="card">
-      <h3>運動後低血壓</h3>
-      <div class="big">−15.2%<small>休息 15 分鐘內平均收縮壓降幅（134 → 114 mmHg）</small></div>
-      <p>同一研究中 11 人次收縮壓降超過 20 mmHg，4 人次超過 30 mmHg，部分在進入 Rehab 前 5 分鐘內就發生。收縮壓至少 120 分鐘低於基線，心肌灌流指標（SEVR）低落達 110 分鐘，手臂血壓計測不出這個問題。</p>
+    <div class="grid3">
+      <div class="card"><div class="row"><span class="tag">R1</span><span class="lv lv3">後送</span></div><h3>心臟</h3>
+        <ul><li>進入時 HR <span class="num">&gt; 220 − 年齡</span>（取十位數近似）</li><li>休息 20 分鐘後 HR 仍 <span class="num">&gt;140</span></li><li>新發生的不規則脈搏 → 12 導程</li><li>胸痛、疑似心肌梗塞</li></ul></div>
+      <div class="card"><div class="row"><span class="tag">R2</span><span class="lv lv3">後送</span></div><h3>血壓</h3>
+        <ul><li>SBP <span class="num">&lt;100 mmHg</span>（NFPA／明尼蘇達 ALS）</li><li>SBP <span class="num">&lt;80 mmHg</span>：消防署列需立即緊急救護</li><li>休克徵象</li></ul></div>
+      <div class="card"><div class="row"><span class="tag">R3</span><span class="lv lv3">後送</span></div><h3>呼吸</h3>
+        <ul><li>RR <span class="num">&gt;30</span>（台灣一般救護危急：<span class="num">&gt;29</span> 或 <span class="num">&lt;10</span>）</li><li>SpO₂ <span class="num">&lt;85%</span></li><li>給氧後 SpO₂ 仍 <span class="num">&lt;95%</span></li></ul></div>
+      <div class="card"><div class="row"><span class="tag">R4</span><span class="lv lv3">後送</span></div><h3>一氧化碳</h3>
+        <ul><li>SpCO <span class="num">&gt;15%</span>：高流量氧氣並送醫</li><li>任何 SpCO 數值，合併胸痛、氣促或意識改變</li></ul></div>
+      <div class="card"><div class="row"><span class="tag">R5</span><span class="lv lv3">後送</span></div><h3>體溫</h3>
+        <ul><li>休息 20 分鐘並主動降溫後，口溫仍 <span class="num">&gt;38.1 °C</span>（100.6 °F）</li><li><span class="num">&gt;40.0 °C</span> 合併意識改變、皮膚乾熱（中暑）</li><li>熱衰竭、熱痙攣、低體溫或凍傷</li></ul></div>
+      <div class="card"><div class="row"><span class="tag">R6</span><span class="lv lv3">後送</span></div><h3>神智與外觀</h3>
+        <ul><li>意識改變、言語不清、步態不穩</li><li>救護人員判斷病況危及生命</li></ul></div>
     </div>
   </div>
-  <div class="advice">
-    <h3>分隊建議做法（依上述研究推導，非指引原文，請醫療指導確認）</h3>
-    <ol>
-      <li>放行前問一次：「站起來會不會頭暈？」並觀察起身與行走。</li>
-      <li>T0 收縮壓當作此人當次的比較基準，T15／T20 掉超過 20 mmHg 時延長觀察。</li>
-      <li>剛放行的人優先指派較低強度任務，不要立刻再進入高熱環境。</li>
-      <li>任務結束、收隊前每人再量一次生命徵象並記錄。</li>
-    </ol>
+</section>
+
+<section class="band fog" id="table" aria-labelledby="h-table">
+  <div class="container">
+    <div class="sec-head">
+      <span class="tag">02 · 生命徵象對照表</span>
+      <h2 id="h-table">每項數值的分界</h2>
+      <p>放行要在 T20 之後，且全部項目同時達成。</p>
+    </div>
+    <div class="tbl">
+      <table class="stack">
+        <thead>
+          <tr><th>項目</th><th><span class="lv lv1">第一級 放行</span></th><th><span class="lv lv2">第二級 留置／禁止放行</span></th><th><span class="lv lv3">第三級 立即後送</span></th></tr>
+        </thead>
+        <tbody>
+          <tr><th>心率 HR</th>
+            <td class="c1" data-l="放行"><span class="num">&lt;100 bpm</span><span class="src">部分區域 EMS 用 ≤110 或 &lt;110，本分隊採 &lt;100</span></td>
+            <td class="c2" data-l="留置"><ul><li>休息 10 分鐘後 <span class="num">&gt;100</span>，持續 20 分鐘</li><li>持續 <span class="num">&gt;110</span>（消防署第二級）</li><li>20 分鐘後 <span class="num">&gt;120</span>：強制留置</li></ul></td>
+            <td class="c3" data-l="後送"><ul><li>20 分鐘後 <span class="num">&gt;140</span></li><li>進入時 <span class="num">&gt;220−年齡</span></li><li>新發不規則脈搏 → 12 導程</li></ul></td></tr>
+          <tr><th>血壓 BP</th>
+            <td class="c1" data-l="放行"><span class="num">&lt;140/90</span>，且 SBP <span class="num">≥100</span></td>
+            <td class="c2" data-l="留置"><ul><li>15 分鐘後 <span class="num">&gt;140/90</span>：續留置</li><li>SBP <span class="num">&gt;160</span> 或 DBP <span class="num">&gt;100</span>：嚴禁重返火場</li></ul></td>
+            <td class="c3" data-l="後送"><ul><li>SBP <span class="num">&lt;100</span>（NFPA／MN ALS）</li><li>SBP <span class="num">&lt;80</span>（消防署）</li></ul></td></tr>
+          <tr><th>體溫 BT</th>
+            <td class="c1" data-l="放行">口溫 <span class="num">≤38.0 °C</span>，且未持續上升</td>
+            <td class="c2" data-l="留置"><ul><li>口溫 <span class="num">&gt;38.0 °C</span>：禁止穿回防護衣，主動降溫</li><li>持續上升超過 20 分鐘</li></ul></td>
+            <td class="c3" data-l="後送"><ul><li>20 分鐘並降溫後仍 <span class="num">&gt;38.1 °C</span></li><li><span class="num">&gt;40.0 °C</span>＋意識改變＋皮膚乾熱</li></ul></td></tr>
+          <tr><th>呼吸 RR</th>
+            <td class="c1" data-l="放行"><span class="num">12–20 次/分</span>，無呼吸困難</td>
+            <td class="c2" data-l="留置">休息後仍 <span class="num">&gt;20</span>，或有呼吸困難</td>
+            <td class="c3" data-l="後送"><span class="num">&gt;30</span>（台灣 <span class="num">&gt;29</span> 或 <span class="num">&lt;10</span>）</td></tr>
+          <tr><th>SpO₂</th>
+            <td class="c1" data-l="放行">室內空氣 <span class="num">≥95%</span><span class="src">部分規範要求 ≥96%</span></td>
+            <td class="c2" data-l="留置">室內空氣 <span class="num">&lt;95%</span></td>
+            <td class="c3" data-l="後送"><span class="num">&lt;85%</span>，或給氧後仍 <span class="num">&lt;95%</span></td></tr>
+          <tr><th>SpCO</th>
+            <td class="c1" data-l="放行">非吸菸者 <span class="num">&lt;5%</span><br>吸菸者 <span class="num">&lt;10%</span></td>
+            <td class="c2" data-l="留置"><ul><li><span class="num">≥5%</span>：不得離開 Rehab 區</li><li><span class="num">5–10%</span> 且無症狀：呼吸新鮮空氣至 <span class="num">&lt;5%</span></li><li><span class="num">10–15%</span>：醫療處置區給高流量氧至 <span class="num">&lt;5%</span></li></ul></td>
+            <td class="c3" data-l="後送"><ul><li><span class="num">&gt;15%</span>：高流量氧並送醫</li><li>任何數值合併胸痛、氣促、意識改變</li></ul></td></tr>
+          <tr><th>臨床評估</th>
+            <td class="c1" data-l="放行">意識、言語、步態正常；無主訴；本人表示可以繼續</td>
+            <td class="c2" data-l="留置">頭暈、疲倦、噁心、肌肉抽筋等輕度症狀</td>
+            <td class="c3" data-l="後送">意識改變、胸痛、休克、中暑、熱衰竭、低體溫／凍傷</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
 
-<section aria-labelledby="s4">
-  <h2 id="s4"><span class="sec">04</span>Rehab 紀錄表</h2>
-  <div class="tbl-wrap">
-    <table class="rec">
-      <thead>
-        <tr><th>項目</th><th>T0 進入</th><th>T10</th><th>T15</th><th>T20</th><th>T30</th><th>收隊前</th></tr>
-      </thead>
-      <tbody>
-        <tr><th>時間</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-        <tr><th>HR／規則</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-        <tr><th>BP</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-        <tr><th>RR</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-        <tr><th>SpO₂</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-        <tr><th>SpCO</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-        <tr><th>口溫</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-        <tr><th>意識／步態／主訴</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-        <tr><th>分級（1／2／3）</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-      </tbody>
-    </table>
+<section class="band" id="pitfalls" aria-labelledby="h-pit">
+  <div class="container">
+    <div class="sec-head">
+      <span class="tag">03 · 放行盲點</span>
+      <h2 id="h-pit">數值正常，<br>不代表安全</h2>
+      <p>多數消防員在 10–20 分鐘內就符合放行數值，但研究顯示心血管風險在放行後仍持續存在。</p>
+    </div>
+    <div class="grid3">
+      <div class="card"><span class="tag">症狀和數值對不上</span><div class="big">10–20 分鐘</div>
+        <p>多數人在此時間內數值就落入放行範圍。有症狀與無症狀者的生命徵象沒有顯著差異（PMID 26953865）。NFPA 1584 附錄強調，一定要同時評估步態、言語、神智與主訴。</p></div>
+      <div class="card"><span class="tag">體溫續升、心率恢復慢</span><div class="big">50–80 分鐘</div>
+        <p>心率回到基線所需時間。撤出後 7 分鐘內核心體溫從 37.8 升到 37.9 °C，約 60 分鐘才回基線。口溫比核心低約 0.55 °C，耳溫低約 1.1 °C：治療病人，不是治療溫度計。</p></div>
+      <div class="card"><span class="tag">運動後低血壓</span><div class="big">−15.2%</div>
+        <p>休息 15 分鐘內平均收縮壓由 134 降到 114 mmHg；11 人次降超過 20 mmHg，4 人次超過 30 mmHg。收縮壓至少 120 分鐘低於基線，心肌灌流指標（SEVR）低落達 110 分鐘，手臂血壓計測不出來。</p></div>
+    </div>
+    <div class="advice">
+      <span class="tag">分隊建議做法 · 依上述研究推導，非指引原文，請醫療指導確認</span>
+      <ol>
+        <li>放行前問一次「站起來會不會頭暈？」，並觀察起身與行走。</li>
+        <li>以 T0 收縮壓為此人當次的基準，T15／T20 掉超過 20 mmHg 時延長觀察。</li>
+        <li>剛放行的人優先指派較低強度任務，不要立刻再進入高熱環境。</li>
+        <li>任務結束、收隊前每人再量一次生命徵象並記錄。</li>
+      </ol>
+      <a class="more" href="#record">前往紀錄表 →</a>
+    </div>
   </div>
-  <p class="notes">姓名＿＿＿＿＿　年齡＿＿＿（220−年齡＝＿＿＿）　吸菸：是／否　處置結果：放行／留置／後送（時間＿＿＿）　Rehab 管理員簽名＿＿＿＿＿</p>
 </section>
 
-<section aria-labelledby="s5" class="notes">
-  <h2 id="s5"><span class="sec">05</span>標準不一致時本 SOP 的取捨</h2>
-  <ol>
-    <li><strong>心率放行：</strong>NFPA 為 &lt;100；部分區域 EMS 為 ≤110。本 SOP 採 &lt;100。</li>
-    <li><strong>收縮壓 &lt;100：</strong>消防署列第二級（留置），NFPA／明尼蘇達 ALS 列立即後送。本 SOP 採立即後送；SBP &lt;80 依消防署為立即緊急救護。</li>
-    <li><strong>體溫：</strong>消防署留置門檻為口溫 &gt;38.0 °C，美規為 &gt;38.1 °C。留置採 38.0，後送沿用美規「20 分鐘＋主動降溫後仍 &gt;38.1 °C」。</li>
-    <li><strong>SpCO：</strong>消防署 &gt;5% 不得離開、&gt;15% 立即高濃度氧；VDH 10–15% 高流量氧、&gt;15% 送醫；MLREMS 2025 為 5–12% 呼吸空氣、12–25% 高流量氧、≥25% 送醫。本 SOP 採 VDH 的較低門檻（&gt;15% 送醫）。</li>
-    <li><strong>SpO₂：</strong>放行採 ≥95%；如分隊或醫療指導採 ≥96%，請直接修改本表。</li>
-  </ol>
-  <p>資料來源：內政部消防署《消防人員後勤照護指引》；NFPA 1584；Virginia Department of Health（VDH）、Minnesota State Fire Chiefs Association（MSFCA）、Monroe-Livingston Regional EMS（MLREMS, 2025）、SCCMCA 火場 EMS 流程；CDC／NIOSH 消防員實火訓練生理研究；PMID 26953865。本表為分隊內部作業草案，不取代醫療指導醫師的現場判斷。</p>
+<section class="band fog" id="record" aria-labelledby="h-rec">
+  <div class="container">
+    <div class="sec-head">
+      <span class="tag">04 · 紀錄表</span>
+      <h2 id="h-rec">Rehab 紀錄表</h2>
+      <p>每位進入 Rehab 的消防員一張，可列印使用。</p>
+    </div>
+    <div class="tbl">
+      <table class="rec">
+        <thead><tr><th>項目</th><th>T0 進入</th><th>T10</th><th>T15</th><th>T20</th><th>T30</th><th>收隊前</th></tr></thead>
+        <tbody>
+          <tr><th>時間</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><th>HR／規則</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><th>BP</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><th>RR</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><th>SpO₂</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><th>SpCO</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><th>口溫</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><th>意識／步態／主訴</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><th>分級（1／2／3）</th><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="sign">姓名＿＿＿＿＿　年齡＿＿＿（220−年齡＝＿＿＿）　吸菸：是／否　處置結果：放行／留置／後送（時間＿＿＿）　Rehab 管理員簽名＿＿＿＿＿</p>
+  </div>
 </section>
 
-</div>
+<section class="band" aria-labelledby="h-notes">
+  <div class="container">
+    <div class="sec-head">
+      <span class="tag">05 · 取捨說明</span>
+      <h2 id="h-notes">標準不一致時</h2>
+    </div>
+    <div class="notes">
+      <ol>
+        <li><strong>心率放行：</strong>NFPA 為 &lt;100；部分區域 EMS 為 ≤110。本 SOP 採 &lt;100。</li>
+        <li><strong>收縮壓 &lt;100：</strong>消防署列第二級（留置），NFPA／明尼蘇達 ALS 列立即後送。本 SOP 採立即後送；SBP &lt;80 依消防署為立即緊急救護。</li>
+        <li><strong>體溫：</strong>消防署留置門檻為口溫 &gt;38.0 °C，美規為 &gt;38.1 °C。留置採 38.0，後送沿用美規「20 分鐘並主動降溫後仍 &gt;38.1 °C」。</li>
+        <li><strong>SpCO：</strong>消防署 &gt;5% 不得離開、&gt;15% 立即高濃度氧；VDH 10–15% 高流量氧、&gt;15% 送醫；MLREMS 2025 為 5–12% 呼吸空氣、12–25% 高流量氧、≥25% 送醫。本 SOP 採 VDH 的較低門檻（&gt;15% 送醫）。</li>
+        <li><strong>SpO₂：</strong>放行採 ≥95%；如分隊或醫療指導採 ≥96%，請直接修改本表。</li>
+      </ol>
+      <p>資料來源：內政部消防署《消防人員後勤照護指引》；NFPA 1584；Virginia Department of Health（VDH）、Minnesota State Fire Chiefs Association（MSFCA）、Monroe-Livingston Regional EMS（MLREMS, 2025）、SCCMCA 火場 EMS 流程；CDC／NIOSH 消防員實火訓練生理研究；PMID 26953865。本表為分隊內部作業草案，不取代醫療指導醫師的現場判斷。</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">火場 Rehab 檢傷 SOP · 草案 2026-11 · <a href="#top">回到頁首 ↑</a></div>
+</footer>
+
+<script>
+(function () {
+  var form = document.getElementById('hrForm');
+  var age = document.getElementById('age');
+  var out = document.getElementById('hrMax');
+  var note = out.parentNode.nextElementSibling;
+  function update() {
+    var a = parseInt(age.value, 10);
+    if (a >= 16 && a <= 80) {
+      out.textContent = String(220 - a);
+      note.textContent = '220 − ' + a + ' 歲。進入時超過 → 立即後送';
+    } else {
+      out.textContent = '—';
+      note.textContent = '請輸入 16–80 之間的年齡';
+    }
+  }
+  age.addEventListener('input', update);
+  form.addEventListener('submit', function (e) { e.preventDefault(); update(); });
+})();
+</script>
 </body>
 </html>
